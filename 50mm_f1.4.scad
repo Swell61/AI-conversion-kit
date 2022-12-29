@@ -14,18 +14,19 @@ minApertureInStopsUnder5point6=3;
 fatInnerRingThickness=0.5; // Ring that includes the apeture bumps, from "inner diameter" to edge of bump stops
 fatInnerRingHeight=6.9;
 fatInnerRingZ=1.8; // From bottom
-thinInnerRingThickness=2;
-thinInnerRingHeight=1.4;
-thinInnerRingZ=10.5;
+
+TWIST_LIMIT_RING_THICKNESS_MM=2;
+TWIST_LIMIT_RING_HEIGHT_MM=1.4;
+TWIST_LIMIT_RING_Z_MM=10.5;
 
 //parameters that should be the same throughout the NIKKOR line
-apertureClickAngle=7.15; // I think this is the angle the aperture ring moves for each stop click
+APERTURE_CLICK_ANGLE_DEG=7.15; // I think this is the angle the aperture ring moves for each stop click
 
 //cosmetic parameters
-handleHeight=3.20; //the height of the fluted part of the aperture ring (cosmetic)
-handleThickness=2.2; //the thickness of the above part (cosmetic)
-handleRecessRadius=6; //the recess circle radius (cosmetic)
-handleZ=5;
+SCALLOPS_HEIGHT_MM=3.20; //the height of the fluted part of the aperture ring (cosmetic)
+SCALLOPS_THICKNESS_MM=2.2; //the thickness of the above part (cosmetic)
+SCALLOPS_RECESS_RADIUS_MM=6; //the recess circle radius (cosmetic)
+SCALLOPS_Z_MM=5; // This should be defined per lens
 
 //implementation details
 $fa = 3; //circle resolution
@@ -48,20 +49,21 @@ outerRadius=outerDiameter/2;
 difference(){
     // Ring minus the screw hole
     rim(originalHeight-rimHeight,innerRadius,thickness);
+    screw_hole();
+    // Tapered edge
     translate([0, 0, -0.1])
         cylinder(fatInnerRingZ+0.1, d1=innerDiameter+1.5, d2=innerDiameter);
-    screw_hole();
 }
 
 // Scallops
 difference(){
-    translate([0,0,handleZ]) union() {
-        cylinder(handleHeight,outerRadius+handleThickness,outerRadius+handleThickness);
-        translate([0,0,handleHeight]) cylinder(1,outerRadius+handleThickness,outerRadius);
-        translate([0,0,-1]) cylinder(1,outerRadius,outerRadius+handleThickness);
+    translate([0,0,SCALLOPS_Z_MM]) union() {
+        cylinder(SCALLOPS_HEIGHT_MM,outerRadius+SCALLOPS_THICKNESS_MM,outerRadius+SCALLOPS_THICKNESS_MM);
+        translate([0,0,SCALLOPS_HEIGHT_MM]) cylinder(1,outerRadius+SCALLOPS_THICKNESS_MM,outerRadius);
+        translate([0,0,-1]) cylinder(1,outerRadius,outerRadius+SCALLOPS_THICKNESS_MM);
     }
     cylinder(originalHeight,outerRadius,outerRadius);   
-    Radial_Array(30,12,outerRadius+handleRecessRadius*0.55) rotate([0,0,90]) scale([0.4,1,1]) cylinder(originalHeight+tolerance,handleRecessRadius,handleRecessRadius);
+    Radial_Array(30,12,outerRadius+SCALLOPS_RECESS_RADIUS_MM*0.55) rotate([0,0,90]) scale([0.4,1,1]) cylinder(originalHeight+tolerance,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
 }
 
 // Thick ring with aperture click ridges
@@ -72,9 +74,9 @@ difference(){
     
     rotate([0,0,-52]) mirror([0,1,0]) slice(2,originalHeight);
     //aperture clicks
-    Radial_Array(apertureClickAngle,apertureClicks,innerRadius-fatInnerRingThickness) cylinder(originalHeight,0.7,0.7);
+    Radial_Array(APERTURE_CLICK_ANGLE_DEG,apertureClicks,innerRadius-fatInnerRingThickness) cylinder(originalHeight,0.7,0.7);
     //special min aperture click - heh?
-   // rotate([0,0,-apertureClicks*apertureClickAngle+4]) translate([0,innerRadius-fatInnerRingThickness,0]) cylinder(originalHeight,0.5,0.5);
+   // rotate([0,0,-apertureClicks*APERTURE_CLICK_ANGLE_DEG+4]) translate([0,innerRadius-fatInnerRingThickness,0]) cylinder(originalHeight,0.5,0.5);
     screw_hole();
 }
 
@@ -84,18 +86,18 @@ intersection(){
     union(){
         //our zero is f/11 so 2 stops under 5.6
         // EE Service coupler
-        rotate([0,0,(minApertureInStopsUnder5point6-2)*apertureClickAngle-124]) slice(8, originalHeight,outerRadius+3);
+        rotate([0,0,(minApertureInStopsUnder5point6-2)*APERTURE_CLICK_ANGLE_DEG-124]) slice(8, originalHeight,outerRadius+3);
         //actual AI ridge
-        rotate([0,0,(-2-maxApertureInStopsOver5point6+AIridgePosition)*apertureClickAngle]) slice(54, originalHeight,outerRadius+3);
+        rotate([0,0,(-2-maxApertureInStopsOver5point6+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG]) slice(54, originalHeight,outerRadius+3);
     }
 }
 
 // Thin ring that limits the rotation
 difference(){
     union(){
-        translate([0,0,thinInnerRingZ]) rim(thinInnerRingHeight,innerRadius-thinInnerRingThickness,thinInnerRingThickness);
+        translate([0,0,TWIST_LIMIT_RING_Z_MM]) rim(TWIST_LIMIT_RING_HEIGHT_MM,innerRadius-TWIST_LIMIT_RING_THICKNESS_MM,TWIST_LIMIT_RING_THICKNESS_MM);
     //small ridge to help with printing (balcony)
-        translate([0,0,thinInnerRingZ-0.5]) coneRim(0.5,innerRadius-thinInnerRingThickness,thinInnerRingThickness);
+        translate([0,0,TWIST_LIMIT_RING_Z_MM-0.5]) coneRim(0.5,innerRadius-TWIST_LIMIT_RING_THICKNESS_MM,TWIST_LIMIT_RING_THICKNESS_MM);
     }
     mirror([0,1,0]) slice(75,originalHeight);
 }
