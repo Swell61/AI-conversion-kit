@@ -19,7 +19,7 @@ thinInnerRingHeight=1.4;
 thinInnerRingZ=10.5;
 
 //parameters that should be the same throughout the NIKKOR line
-apertureClickAngle=7; // I think this is the angle the aperture ring moves for each stop click
+apertureClickAngle=7.15; // I think this is the angle the aperture ring moves for each stop click
 
 //cosmetic parameters
 handleHeight=3.20; //the height of the fluted part of the aperture ring (cosmetic)
@@ -48,6 +48,8 @@ outerRadius=outerDiameter/2;
 difference(){
     // Ring minus the screw hole
     rim(originalHeight-rimHeight,innerRadius,thickness);
+    translate([0, 0, -0.1])
+        cylinder(fatInnerRingZ+0.1, d1=innerDiameter+1.5, d2=innerDiameter);
     screw_hole();
 }
 
@@ -63,6 +65,7 @@ difference(){
 }
 
 // Thick ring with aperture click ridges
+rotate([0, 0, 7])
 difference(){
     translate([0,0,fatInnerRingZ]) rim(fatInnerRingHeight,innerRadius-fatInnerRingThickness,fatInnerRingThickness);
     mirror([0,1,0]) slice(2,originalHeight);
@@ -98,7 +101,7 @@ difference(){
 }
 
 module screw_hole(){
-    rotate([0,0,6]) translate([-innerRadius-thickness-tolerance*2,0,2.6]) rotate([90,0,90]) cylinder(7, r=0.7, $fn=16);
+    rotate([0,0,7]) translate([-innerRadius-thickness-tolerance*2,0,2.6]) rotate([90,0,90]) cylinder(7, r=0.75, $fn=16);
 }
 
 //Radial_Array(a,n,r){child object}
@@ -130,6 +133,8 @@ module rim(height,innerRadius,thickness){
     difference(){
         cylinder(height,outerRadius,outerRadius);
         translate([0,0,-tolerance/2]) cylinder(height+tolerance,innerRadius,innerRadius);
+        
+        //cylinder(fatInnerRingZ, innerDiameter + 10, center = true);
     }
 }
 
