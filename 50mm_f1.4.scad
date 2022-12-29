@@ -2,18 +2,19 @@
 
 /**
     There are a few important components to the aperture ring. There is the
-    "rim", which is the base of the aperture ring. There are two inner rings,
-    one thin, one thick. The thin ring is what limits the rotation of the
-    aperture ring. The thick ring is what rides against the lens and contains
-    the aperture click grooves. Finally, there is a hole into which a screw
-    is secure which trasfers the rotation of the aperture ring to the lens.
-    There may be more features to an aperture ring, but these are the important
-    ones for making something that will operate.
+    "ring" which is the base of the aperture ring. There are two inner
+    rings, one thin, one thick. The thin ring is what limits the rotation of
+    the aperture ring. The thick ring is what rides against the lens and 
+    contains the aperture click grooves. Finally, there is a hole into which a
+    screw is secure which trasfers the rotation of the aperture ring to the
+    lens. There may be more features to an aperture ring, but these are the
+    important ones for making something that will operate.
 
     Because it can be difficult to measure the diameter of the rim, and because
     there is no benefit (that I've seen so far) to considering the rim and the
     thick inner ring as separate pieces, they are considered to be a single
-    part, so only the inner diameter of the thick ring is needed.
+    part, so only the inner diameter of the thick ring is needed. This is
+    referred to as the "base".
 
     To procude a model for an aperture ring for a lens, the following
     measurements are required:
@@ -73,9 +74,6 @@ difference(){
     // Ring minus the screw hole
     rim(originalHeight-rimHeight,innerRadius,thickness);
     screw_hole();
-    // Tapered edge
-    translate([0, 0, -0.1])
-        cylinder(fatInnerRingZ+0.1, d1=innerDiameter+1.5, d2=innerDiameter);
 }
 
 // Scallops
@@ -105,28 +103,37 @@ difference(){
 
 // Ai ridges (the big one and the little one). Big tab tells the camera the currently selected aperture, small tab is the "EE Servo coupler".
 intersection(){
-    translate([0,0,originalHeight-rimHeight]) rim(rimHeight,innerRadius,thickness+1);
+    translate([0,0,originalHeight-rimHeight])
+        rim(rimHeight,innerRadius,thickness+1);
     union(){
         //our zero is f/11 so 2 stops under 5.6
         // EE Service coupler
-        rotate([0,0,(minApertureInStopsUnder5point6-2)*APERTURE_CLICK_ANGLE_DEG-124]) slice(8, originalHeight,outerRadius+3);
+        rotate([0,0,(minApertureInStopsUnder5point6-2)*APERTURE_CLICK_ANGLE_DEG-124])
+            slice(8, originalHeight,outerRadius+3);
         //actual AI ridge
-        rotate([0,0,(-2-maxApertureInStopsOver5point6+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG]) slice(54, originalHeight,outerRadius+3);
+        rotate([0,0,(-2-maxApertureInStopsOver5point6+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG])
+            slice(54, originalHeight,outerRadius+3);
     }
 }
 
 // Thin ring that limits the rotation
 difference(){
     union(){
-        translate([0,0,TWIST_LIMIT_RING_Z_MM]) rim(TWIST_LIMIT_RING_HEIGHT_MM,innerRadius-TWIST_LIMIT_RING_THICKNESS_MM,TWIST_LIMIT_RING_THICKNESS_MM);
-    //small ridge to help with printing (balcony)
-        translate([0,0,TWIST_LIMIT_RING_Z_MM-0.5]) coneRim(0.5,innerRadius-TWIST_LIMIT_RING_THICKNESS_MM,TWIST_LIMIT_RING_THICKNESS_MM);
+        translate([0,0,TWIST_LIMIT_RING_Z_MM])
+            rim(TWIST_LIMIT_RING_HEIGHT_MM,innerRadius-TWIST_LIMIT_RING_THICKNESS_MM,TWIST_LIMIT_RING_THICKNESS_MM);
+        //small ridge to help with printing (balcony)
+        translate([0,0,TWIST_LIMIT_RING_Z_MM-0.5])
+            coneRim(0.5,innerRadius-TWIST_LIMIT_RING_THICKNESS_MM,TWIST_LIMIT_RING_THICKNESS_MM);
     }
-    mirror([0,1,0]) slice(75,originalHeight);
+    mirror([0,1,0])
+        slice(75,originalHeight);
 }
 
 module screw_hole(){
-    rotate([0,0,7]) translate([-innerRadius-thickness-tolerance*2,0,2.6]) rotate([90,0,90]) cylinder(7, r=0.75, $fn=16);
+    rotate([0,0,7])
+    translate([-innerRadius-thickness-tolerance*2,0,2.6])
+    rotate([90,0,90])
+        cylinder(7, r=0.75, $fn=16);
 }
 
 //Radial_Array(a,n,r){child object}
@@ -157,10 +164,16 @@ module rim(height,innerRadius,thickness){
     tolerance=2;
     difference(){
         cylinder(height,outerRadius,outerRadius);
-        translate([0,0,-tolerance/2]) cylinder(height+tolerance,innerRadius,innerRadius);
-        
-        //cylinder(fatInnerRingZ, innerDiameter + 10, center = true);
+        translate([0,0,-tolerance/2]) 
+            cylinder(height+tolerance,innerRadius,innerRadius);
     }
+}
+
+module base(height, inner_radius, thickness) {
+    rim(height, innerRadius, thickness);
+    // Tapered edge at the bottom as there is sometimes a lip
+    translate([0, 0, -0.1])
+        cylinder(fatInnerRingZ+0.1, d1=innerDiameter+1.5, d2=innerDiameter);
 }
 
 module coneRim(height,innerRadius,thickness){
