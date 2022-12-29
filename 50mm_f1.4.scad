@@ -1,5 +1,28 @@
 // TODO Change the way the diameter stuff works so its easer to measure new rings. E.g. measuring "inner diameter" and then the fat ring thickness is too involved, the inner diameter already includes the thickness of the fat ring because that's probably what was measured against.
 
+/**
+    There are a few important components to the aperture ring. There is the
+    "rim", which is the base of the aperture ring. There are two inner rings,
+    one thin, one thick. The thin ring is what limits the rotation of the
+    aperture ring. The thick ring is what rides against the lens and contains
+    the aperture click grooves. Finally, there is a hole into which a screw
+    is secure which trasfers the rotation of the aperture ring to the lens.
+    There may be more features to an aperture ring, but these are the important
+    ones for making something that will operate.
+
+    Because it can be difficult to measure the diameter of the rim, and because
+    there is no benefit (that I've seen so far) to considering the rim and the
+    thick inner ring as separate pieces, they are considered to be a single
+    part, so only the inner diameter of the thick ring is needed.
+
+    To procude a model for an aperture ring for a lens, the following
+    measurements are required:
+        Inner diameter of thick ring
+        Inner diameter of thin ring
+        Thickness between inner thick ring surface and outer rim surface
+        Aperture values of the lens
+*/
+
 //lens specific parameters
 innerDiameter=60.7; // Not sure where this is from
 thickness=1.6; // Not sure where this is from either
