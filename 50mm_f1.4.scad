@@ -25,7 +25,7 @@
 */
 
 //lens specific parameters
-innerDiameter=60.7; // Not sure where this is from
+innerDiameter=60.6; // Not sure where this is from
 thickness=1.6; // Not sure where this is from either
 originalHeight=16.0; //original non AI ring height
 rimHeight=2.6; //the height that you would actually need to file if you did the conversion by modifying the original aperture ring
@@ -41,7 +41,7 @@ fatInnerRingZ=1.8; // From bottom
 
 TWIST_LIMIT_RING_THICKNESS_MM=2;
 TWIST_LIMIT_RING_HEIGHT_MM=1.4;
-TWIST_LIMIT_RING_Z_MM=10.5;
+TWIST_LIMIT_RING_Z_MM=10;
 
 //parameters that should be the same throughout the NIKKOR line
 APERTURE_CLICK_ANGLE_DEG=7.15; // I think this is the angle the aperture ring moves for each stop click
@@ -68,32 +68,7 @@ outerRadius=outerDiameter/2;
 //use <rabbit-ears.scad>
 //rotate(-15) translate([innerRadius+thickness,0,originalHeight-rimHeight]) //rotate([90,0,90]) rabbit_ears(slope=8);
 
-//rim
-difference(){
-    // Ring minus the screw hole
-    rim(originalHeight-rimHeight,innerRadius,thickness);
-    screw_hole();
-}
-
-// Thick ring with aperture click ridges
-rotate([0, 0, 7])
-difference(){
-    translate([0,0,fatInnerRingZ])
-        rim(fatInnerRingHeight,innerRadius-fatInnerRingThickness,fatInnerRingThickness);
-    mirror([0,1,0])
-        slice(2,originalHeight);
-    
-    rotate([0,0,-52])
-    mirror([0,1,0])
-        slice(2,originalHeight);
-    //aperture clicks
-    Radial_Array(APERTURE_CLICK_ANGLE_DEG,apertureClicks,innerRadius-fatInnerRingThickness)
-        cylinder(originalHeight,0.7,0.7);
-    //special min aperture click - heh?
-   // rotate([0,0,-apertureClicks*APERTURE_CLICK_ANGLE_DEG+4]) translate([0,innerRadius-fatInnerRingThickness,0]) cylinder(originalHeight,0.5,0.5);
-    screw_hole();
-}
-
+base(originalHeight-rimHeight, innerRadius, thickness, apertureClicks);
 ai_ridges(originalHeight-rimHeight, rimHeight, thickness, innerRadius, minApertureInStopsUnder5point6-2, maxApertureInStopsOver5point6+2);
 rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM);
 scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, outerRadius, SCALLOPS_THICKNESS_MM);
@@ -140,13 +115,6 @@ module rim(height,innerRadius,thickness){
     }
 }
 
-module base(height, inner_radius, thickness) {
-    rim(height, innerRadius, thickness);
-    // Tapered edge at the bottom as there is sometimes a lip
-    translate([0, 0, -0.1])
-        cylinder(fatInnerRingZ+0.1, d1=innerDiameter+1.5, d2=innerDiameter);
-}
-
 module coneRim(height,innerRadius,thickness){
     outerRadius = innerRadius+thickness;
     tolerance=2;
@@ -173,6 +141,35 @@ module a_triangle(tan_angle, a_len, depth)
     linear_extrude(height=depth)
     {
         polygon(points=[[0,0],[a_len,0],[0,tan(tan_angle) * a_len]], paths=[[0,1,2]]);
+    }
+}
+
+/**
+ * Base aperture ring with a tapered bottom and aperture click ridges
+ *
+ * @param height_mm height of ring
+ * @param inner_radius_mm inner radius of ring
+ * @param thickness_mm thickness of ring
+ * @param num_clicks number of aperture clicks required
+ */
+module base(height_mm, inner_radius_mm, thickness_mm, num_clicks) {
+    inner_diameter_mm = 2 * inner_radius_mm;
+    difference(){
+        // Ring minus the screw hole
+        rim(height_mm, inner_radius_mm, thickness_mm);
+        // Tapered lip to deal with any rim. Might need moving down slightly
+        cylinder(1.8, d1=inner_diameter_mm+thickness_mm, d2=inner_diameter_mm);
+        rotate([0, 0, 7]) // Needs computing rather than hard coding
+        Radial_Array(APERTURE_CLICK_ANGLE_DEG, num_clicks, inner_radius_mm)
+            // Click ridges will run up to the twist limit ring
+            cylinder(TWIST_LIMIT_RING_Z_MM,0.7,0.7);
+       // Not sure what these cuts are for
+//     // mirror([0,1,0])
+//     //     slice(2,originalHeight);
+//     // rotate([0,0,-52])
+//     // mirror([0,1,0])
+//     //     slice(2,originalHeight);
+        screw_hole();
     }
 }
 
@@ -218,10 +215,10 @@ module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm) {
     // Thin ring that limits the rotation
     difference(){
         union(){
-            translate([0,0,start_z_mm])
+            translate([0,0,start_z_mm+0.5])
                 rim(height_mm,innerRadius-thickness_mm,thickness_mm);
             //small ridge to help with printing (balcony)
-            translate([0,0,start_z_mm-0.5])
+            translate([0,0,start_z_mm])
                 coneRim(0.5,innerRadius-thickness_mm,thickness_mm);
         }
         mirror([0,1,0])
