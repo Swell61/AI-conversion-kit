@@ -109,19 +109,7 @@ intersection(){
     }
 }
 
-// Thin ring that limits the rotation
-difference(){
-    union(){
-        translate([0,0,TWIST_LIMIT_RING_Z_MM])
-            rim(TWIST_LIMIT_RING_HEIGHT_MM,innerRadius-TWIST_LIMIT_RING_THICKNESS_MM,TWIST_LIMIT_RING_THICKNESS_MM);
-        //small ridge to help with printing (balcony)
-        translate([0,0,TWIST_LIMIT_RING_Z_MM-0.5])
-            coneRim(0.5,innerRadius-TWIST_LIMIT_RING_THICKNESS_MM,TWIST_LIMIT_RING_THICKNESS_MM);
-    }
-    mirror([0,1,0])
-        slice(75,originalHeight);
-}
-
+rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM);
 scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, outerRadius, SCALLOPS_THICKNESS_MM);
 
 module screw_hole(){
@@ -199,6 +187,29 @@ module a_triangle(tan_angle, a_len, depth)
     linear_extrude(height=depth)
     {
         polygon(points=[[0,0],[a_len,0],[0,tan(tan_angle) * a_len]], paths=[[0,1,2]]);
+    }
+}
+
+
+/**
+ * Thin rotation limiting ring
+ *
+ * @param start_z_mm startpoint in mm for the limiting ring
+ * @param height_mm height of the ring
+ * @param thickness_mm thickness of the ring
+ */
+module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm) {
+    // Thin ring that limits the rotation
+    difference(){
+        union(){
+            translate([0,0,start_z_mm])
+                rim(height_mm,innerRadius-thickness_mm,thickness_mm);
+            //small ridge to help with printing (balcony)
+            translate([0,0,start_z_mm-0.5])
+                coneRim(0.5,innerRadius-thickness_mm,thickness_mm);
+        }
+        mirror([0,1,0])
+            slice(75,originalHeight);
     }
 }
 
