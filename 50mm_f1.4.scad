@@ -94,21 +94,7 @@ difference(){
     screw_hole();
 }
 
-// Ai ridges (the big one and the little one). Big tab tells the camera the currently selected aperture, small tab is the "EE Servo coupler".
-intersection(){
-    translate([0,0,originalHeight-rimHeight])
-        rim(rimHeight,innerRadius,thickness+1);
-    union(){
-        //our zero is f/11 so 2 stops under 5.6
-        // EE Service coupler
-        rotate([0,0,(minApertureInStopsUnder5point6-2)*APERTURE_CLICK_ANGLE_DEG-124])
-            slice(8, originalHeight,outerRadius+3);
-        //actual AI ridge
-        rotate([0,0,(-2-maxApertureInStopsOver5point6+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG])
-            slice(54, originalHeight,outerRadius+3);
-    }
-}
-
+ai_ridges(originalHeight-rimHeight, rimHeight, thickness, innerRadius, minApertureInStopsUnder5point6-2, maxApertureInStopsOver5point6+2);
 rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM);
 scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, outerRadius, SCALLOPS_THICKNESS_MM);
 
@@ -190,6 +176,36 @@ module a_triangle(tan_angle, a_len, depth)
     }
 }
 
+/**
+ * Ai ridge and EE servo coupler
+ * Big tab tells the camera the currently selected aperture, small tab is the
+ * "EE Servo coupler".
+ *
+ * @param start_z_mm startpoint in mm for the ridges (height of base aperture
+                        ring)
+ * @param height_mm height of the ridges
+ * @param thickness_mm thickness of the ridges
+ * @param radius_mm inner radius of the ridges (outer radius of the base
+                        aperture ring)
+ * @param num_stops_under_f11 number of stops under f11
+ * @param num_stops_over_f11 number of stops over f11
+ */
+module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, num_stops_under_f11, num_stops_over_f11) {
+    intersection(){
+        // Full rim around the entire circumference of the ring
+        translate([0,0,start_z_mm])
+            rim(height_mm,radius_mm,thickness_mm+1);
+        union(){
+            //our zero is f/11 so 2 stops under 5.6
+            // EE Service coupler
+            rotate([0,0,num_stops_under_f11*APERTURE_CLICK_ANGLE_DEG-124])
+                slice(8, start_z_mm+height_mm, radius_mm+3);
+            //actual AI ridge
+            rotate([0,0,(-num_stops_over_f11+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG])
+                slice(54, start_z_mm+height_mm,radius_mm+3);
+        }
+    }
+}
 
 /**
  * Thin rotation limiting ring
