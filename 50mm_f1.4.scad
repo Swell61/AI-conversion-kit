@@ -49,7 +49,6 @@ APERTURE_CLICK_ANGLE_DEG=7.15; // I think this is the angle the aperture ring mo
 //cosmetic parameters
 SCALLOPS_HEIGHT_MM=3.20; //the height of the fluted part of the aperture ring (cosmetic)
 SCALLOPS_THICKNESS_MM=2.2; //the thickness of the above part (cosmetic)
-SCALLOPS_RECESS_RADIUS_MM=6; //the recess circle radius (cosmetic)
 SCALLOPS_Z_MM=5; // This should be defined per lens
 
 //implementation details
@@ -76,26 +75,20 @@ difference(){
     screw_hole();
 }
 
-// Scallops
-difference(){
-    translate([0,0,SCALLOPS_Z_MM]) union() {
-        cylinder(SCALLOPS_HEIGHT_MM,outerRadius+SCALLOPS_THICKNESS_MM,outerRadius+SCALLOPS_THICKNESS_MM);
-        translate([0,0,SCALLOPS_HEIGHT_MM]) cylinder(1,outerRadius+SCALLOPS_THICKNESS_MM,outerRadius);
-        translate([0,0,-1]) cylinder(1,outerRadius,outerRadius+SCALLOPS_THICKNESS_MM);
-    }
-    cylinder(originalHeight,outerRadius,outerRadius);   
-    Radial_Array(30,12,outerRadius+SCALLOPS_RECESS_RADIUS_MM*0.55) rotate([0,0,90]) scale([0.4,1,1]) cylinder(originalHeight+tolerance,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
-}
-
 // Thick ring with aperture click ridges
 rotate([0, 0, 7])
 difference(){
-    translate([0,0,fatInnerRingZ]) rim(fatInnerRingHeight,innerRadius-fatInnerRingThickness,fatInnerRingThickness);
-    mirror([0,1,0]) slice(2,originalHeight);
+    translate([0,0,fatInnerRingZ])
+        rim(fatInnerRingHeight,innerRadius-fatInnerRingThickness,fatInnerRingThickness);
+    mirror([0,1,0])
+        slice(2,originalHeight);
     
-    rotate([0,0,-52]) mirror([0,1,0]) slice(2,originalHeight);
+    rotate([0,0,-52])
+    mirror([0,1,0])
+        slice(2,originalHeight);
     //aperture clicks
-    Radial_Array(APERTURE_CLICK_ANGLE_DEG,apertureClicks,innerRadius-fatInnerRingThickness) cylinder(originalHeight,0.7,0.7);
+    Radial_Array(APERTURE_CLICK_ANGLE_DEG,apertureClicks,innerRadius-fatInnerRingThickness)
+        cylinder(originalHeight,0.7,0.7);
     //special min aperture click - heh?
    // rotate([0,0,-apertureClicks*APERTURE_CLICK_ANGLE_DEG+4]) translate([0,innerRadius-fatInnerRingThickness,0]) cylinder(originalHeight,0.5,0.5);
     screw_hole();
@@ -129,6 +122,8 @@ difference(){
         slice(75,originalHeight);
 }
 
+scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, outerRadius, SCALLOPS_THICKNESS_MM);
+
 module screw_hole(){
     rotate([0,0,7])
     translate([-innerRadius-thickness-tolerance*2,0,2.6])
@@ -154,7 +149,9 @@ module Radial_Array(a,n,r)
 
 module slice(angle, height,radius=innerRadius){
     intersection() {
-        mirror([1,0,0]) translate([-radius*1.2,0,0]) a_triangle(angle, radius*1.2, height);  
+        mirror([1,0,0])
+        translate([-radius*1.2,0,0])
+            a_triangle(angle, radius*1.2, height);  
         cylinder(height,radius,radius);
     }
 }
@@ -183,7 +180,8 @@ module coneRim(height,innerRadius,thickness){
         cylinder(height,outerRadius,outerRadius);
         union(){
 			cylinder(height,outerRadius,innerRadius);
-			translate([0,0,-tolerance/2]) cylinder(height+tolerance,innerRadius,innerRadius); //this just helps to create a nice preview
+			translate([0,0,-tolerance/2])
+                cylinder(height+tolerance,innerRadius,innerRadius); //this just helps to create a nice preview
 		}
     }
 }
@@ -201,5 +199,34 @@ module a_triangle(tan_angle, a_len, depth)
     linear_extrude(height=depth)
     {
         polygon(points=[[0,0],[a_len,0],[0,tan(tan_angle) * a_len]], paths=[[0,1,2]]);
+    }
+}
+
+/**
+ * Scalloped ridge around the outside of the aperture ring for grip
+ *
+ * @param start_z_mm startpoint in mm for the scalloped ridge to start
+ * @param height_mm height of the scallop ridges
+ * @param radius_mm inner radius of the scalloped ridge (outer diameter
+ *                      of the base aperture ring)
+ * @param thickness_mm thickness of the scalloped ridges
+ */
+module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
+    SCALLOPS_RECESS_RADIUS_MM=6; //the recess circle radius (cosmetic)
+    // Scallops
+    difference(){
+        translate([0,0,start_z_mm])
+        union() {
+            cylinder(height_mm,radius_mm+thickness_mm,radius_mm+thickness_mm);
+            translate([0,0,height_mm])
+                cylinder(1,radius_mm+thickness_mm,radius_mm);
+            translate([0,0,-1])
+                cylinder(1,radius_mm,radius_mm+thickness_mm);
+        }
+        cylinder(originalHeight,radius_mm,radius_mm);   
+        Radial_Array(30,12,radius_mm+SCALLOPS_RECESS_RADIUS_MM*0.55)
+        rotate([0,0,90]) 
+        scale([0.4,1,1])
+            cylinder(originalHeight+tolerance,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
     }
 }
