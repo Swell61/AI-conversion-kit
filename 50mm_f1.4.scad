@@ -40,7 +40,7 @@ fatInnerRingHeight=6.9;
 fatInnerRingZ=1.8; // From bottom
 
 TWIST_LIMIT_RING_THICKNESS_MM=2;
-TWIST_LIMIT_RING_HEIGHT_MM=1.4;
+TWIST_LIMIT_RING_HEIGHT_MM=1.9;
 TWIST_LIMIT_RING_Z_MM=10;
 
 //parameters that should be the same throughout the NIKKOR line
@@ -105,29 +105,36 @@ module slice(angle, height,radius=innerRadius){
     }
 }
 
-module rim(height,innerRadius,thickness){
-    outerRadius = innerRadius+thickness;
-    tolerance=2;
+/**
+ * Hollow cylinder
+ *
+ * @param height_mm of tube
+ * @param inner_radius_mm of tube
+ * @param thickness_mm of tube
+ */
+module tube(height_mm, inner_radius_mm, thickness_mm){
+    outerRadius = inner_radius_mm + thickness_mm;
+    tolerance = 0.1;
     difference(){
-        cylinder(height,outerRadius,outerRadius);
-        translate([0,0,-tolerance/2]) 
-            cylinder(height+tolerance,innerRadius,innerRadius);
+        cylinder(height_mm, outerRadius, outerRadius);
+        translate([0, 0, -tolerance/2]) 
+            cylinder(height_mm+tolerance, inner_radius_mm, inner_radius_mm);
     }
 }
 
-module coneRim(height,innerRadius,thickness){
-    outerRadius = innerRadius+thickness;
-    tolerance=2;
-    difference(){
-        cylinder(height,outerRadius,outerRadius);
-        union(){
-			cylinder(height,outerRadius,innerRadius);
-			translate([0,0,-tolerance/2])
-                cylinder(height+tolerance,innerRadius,innerRadius); //this just helps to create a nice preview
-		}
-    }
-}
-
+// See usage comment
+// module coneRim(height,innerRadius,thickness){
+//     outerRadius = innerRadius+thickness;
+//     tolerance=2;
+//     difference(){
+//         cylinder(height,outerRadius,outerRadius);
+//         union(){
+// 			cylinder(height,outerRadius,innerRadius);
+// 			translate([0,0,-tolerance/2])
+//                 cylinder(height+tolerance,innerRadius,innerRadius); //this just helps to create a nice preview
+// 		}
+//     }
+// }
 
 /**
  * Standard right-angled triangle (tangent version)
@@ -156,7 +163,7 @@ module base(height_mm, inner_radius_mm, thickness_mm, num_clicks) {
     inner_diameter_mm = 2 * inner_radius_mm;
     difference(){
         // Ring minus the screw hole
-        rim(height_mm, inner_radius_mm, thickness_mm);
+        tube(height_mm, inner_radius_mm, thickness_mm);
         // Tapered lip to deal with any rim. Might need moving down slightly
         cylinder(1.8, d1=inner_diameter_mm+thickness_mm, d2=inner_diameter_mm);
         rotate([0, 0, 7]) // Needs computing rather than hard coding
@@ -191,13 +198,12 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, num_stops_under
     intersection(){
         // Full rim around the entire circumference of the ring
         translate([0,0,start_z_mm])
-            rim(height_mm,radius_mm,thickness_mm+1);
+            tube(height_mm,radius_mm,thickness_mm+1);
         union(){
-            //our zero is f/11 so 2 stops under 5.6
             // EE Service coupler
             rotate([0,0,num_stops_under_f11*APERTURE_CLICK_ANGLE_DEG-124])
                 slice(8, start_z_mm+height_mm, radius_mm+3);
-            //actual AI ridge
+            // actual AI ridge
             rotate([0,0,(-num_stops_over_f11+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG])
                 slice(54, start_z_mm+height_mm,radius_mm+3);
         }
@@ -215,11 +221,13 @@ module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm) {
     // Thin ring that limits the rotation
     difference(){
         union(){
-            translate([0,0,start_z_mm+0.5])
-                rim(height_mm,innerRadius-thickness_mm,thickness_mm);
-            //small ridge to help with printing (balcony)
             translate([0,0,start_z_mm])
-                coneRim(0.5,innerRadius-thickness_mm,thickness_mm);
+                tube(height_mm,innerRadius-thickness_mm,thickness_mm);
+            //small ridge to help with printing (balcony)
+            // can't tell what this is doing, the slicer seems to output
+            // the same thing with or without this
+            // translate([0,0,start_z_mm])
+            //     coneRim(0.5,innerRadius-thickness_mm,thickness_mm);
         }
         mirror([0,1,0])
             slice(75,originalHeight);
