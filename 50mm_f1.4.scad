@@ -32,12 +32,8 @@ rimHeight=2.6; //the height that you would actually need to file if you did the 
 apertureClicks=8; //how many aperture clicks does this lens have
 AIridgePosition=5; //see http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos
 // Not sure why indexing is done in this code based on f/5.6 rather than f/11 (which is the zero point)
-maxApertureInStopsOver5point6=4; //e.g. f/4 is 1 stop faster than 5.6 f/2.8 is 2 etc.
-minApertureInStopsUnder5point6=3;
-
-fatInnerRingThickness=0.5; // Ring that includes the apeture bumps, from "inner diameter" to edge of bump stops
-fatInnerRingHeight=6.9;
-fatInnerRingZ=1.8; // From bottom
+STOPS_OVER_F11 = 6;
+STOPS_UNDER_F11 = 1;
 
 TWIST_LIMIT_RING_THICKNESS_MM=2;
 TWIST_LIMIT_RING_HEIGHT_MM=1.9;
@@ -52,12 +48,12 @@ SCALLOPS_THICKNESS_MM=2.2; //the thickness of the above part (cosmetic)
 SCALLOPS_Z_MM=5; // This should be defined per lens
 
 //implementation details
-$fa = 3; //circle resolution
-$fs = 1; //circle resolution 2
-tolerance=2; //this is used so that the F5 openscad preview looks better
+// This increases the resolution, increasing the number of fragments
+$fa = 3; // Minimum fragment angle (default 12)
+$fs = 1; // Minimum size of a fragment (default 2)
+tolerance = 0.1; //this is used so that the F5 openscad preview looks better
 
 print_rabbit_ears=true;
-
 
 //intermediate values
 outerDiameter=innerDiameter+thickness;
@@ -69,7 +65,7 @@ outerRadius=outerDiameter/2;
 //rotate(-15) translate([innerRadius+thickness,0,originalHeight-rimHeight]) //rotate([90,0,90]) rabbit_ears(slope=8);
 
 base(originalHeight-rimHeight, innerRadius, thickness, apertureClicks);
-ai_ridges(originalHeight-rimHeight, rimHeight, thickness, innerRadius, minApertureInStopsUnder5point6-2, maxApertureInStopsOver5point6+2);
+ai_ridges(originalHeight-rimHeight, rimHeight, thickness, innerRadius, STOPS_UNDER_F11, STOPS_OVER_F11);
 rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM);
 scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, outerRadius, SCALLOPS_THICKNESS_MM);
 
