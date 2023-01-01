@@ -1,5 +1,3 @@
-// TODO Change the way the diameter stuff works so its easer to measure new rings. E.g. measuring "inner diameter" and then the fat ring thickness is too involved, the inner diameter already includes the thickness of the fat ring because that's probably what was measured against.
-
 /**
     There are a few important components to the aperture ring. There is the
     "ring" which is the base of the aperture ring. There are two inner
@@ -24,18 +22,17 @@
         Aperture values of the lens
 */
 
-//lens specific parameters
+// Lens specific parameters
 // Inner diameter of the part of the ring that rubs against the lens
-inner_diameter=60;
+INNER_DIAMETER_MM = 60;
 // Thickness between part of ring that rubs against the lens to the
 // main outside part of the ring.
-thickness=1.2;
-originalHeight=16.0; // Original non AI ring height
-apertureClicks=8; //how many aperture clicks does this lens have
-AIridgePosition=5; //see http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos
+THICKNESS_MM = 1.2;
+NON_AI_RING_HEIGHT_MM=16.0; // Original non AI ring height
 
-STOPS_OVER_F11 = 6;
-STOPS_UNDER_F11 = 1;
+APERTURE_VALUES = [16, 11, 8, 5.6, 4, 2.8, 2, 1.4];
+
+AIridgePosition=5; //see http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos
 
 TWIST_LIMIT_RING_THICKNESS_MM = 2;
 TWIST_LIMIT_RING_HEIGHT_MM = 1.4;
@@ -60,22 +57,22 @@ TOLERANCE = 0.1; //this is used so that the F5 openscad preview looks better
 print_rabbit_ears=true;
 
 //intermediate values
-OUTER_DIAMETER_MM = inner_diameter + thickness;
-INNER_RADIUS_MM = inner_diameter / 2;
+OUTER_DIAMETER_MM = INNER_DIAMETER_MM + THICKNESS_MM;
+INNER_RADIUS_MM = INNER_DIAMETER_MM / 2;
 OUTER_RADIUS_MM = OUTER_DIAMETER_MM / 2;
 
 //rabbit ear
 //use <rabbit-ears.scad>
-//rotate(-15) translate([INNER_RADIUS_MM+thickness,0,originalHeight-AI_RIDGE_HEIGHT]) //rotate([90,0,90]) rabbit_ears(slope=8);
+//rotate(-15) translate([INNER_RADIUS_MM+THICKNESS_MM,0,NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT]) //rotate([90,0,90]) rabbit_ears(slope=8);
 
-base(originalHeight-AI_RIDGE_HEIGHT, INNER_RADIUS_MM, thickness, apertureClicks);
-ai_ridges(originalHeight-AI_RIDGE_HEIGHT, AI_RIDGE_HEIGHT, thickness, INNER_RADIUS_MM, STOPS_UNDER_F11, STOPS_OVER_F11);
-rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM);
+base(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, INNER_RADIUS_MM, THICKNESS_MM, APERTURE_VALUES, TWIST_LIMIT_RING_Z_MM);
+ai_ridges(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, AI_RIDGE_HEIGHT, THICKNESS_MM, INNER_RADIUS_MM, STOPS_UNDER_F11, STOPS_OVER_F11);
+rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM, INNER_RADIUS_MM);
 scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, OUTER_RADIUS_MM, SCALLOPS_THICKNESS_MM);
 
 module screw_hole(){
     rotate([0,0,7])
-    translate([-INNER_RADIUS_MM-thickness-TOLERANCE*2,0,2.6])
+    translate([-INNER_RADIUS_MM-THICKNESS_MM-TOLERANCE*2,0,2.6])
     rotate([90,0,90])
         cylinder(7, r=0.75, $fn=16);
 }
@@ -158,7 +155,8 @@ module a_triangle(tan_angle, a_len, depth)
  * @param thickness_mm thickness of ring
  * @param num_clicks number of aperture clicks required
  */
-module base(height_mm, inner_radius_mm, thickness_mm, num_clicks) {
+module base(height_mm, inner_radius_mm, thickness_mm, aperture_values, click_ridge_height_mm) {
+    APERTURE_CLICKS = len(aperture_values);
     inner_diameter_mm = 2 * inner_radius_mm;
     difference(){
         // Ring minus the screw hole
@@ -168,13 +166,13 @@ module base(height_mm, inner_radius_mm, thickness_mm, num_clicks) {
         rotate([0, 0, 7]) // Needs computing rather than hard coding
         Radial_Array(APERTURE_CLICK_ANGLE_DEG, num_clicks, inner_radius_mm)
             // Click ridges will run up to the twist limit ring
-            cylinder(TWIST_LIMIT_RING_Z_MM,0.7,0.7);
+            cylinder(click_ridge_height_mm,0.7,0.7);
        // Not sure what these cuts are for
 //     // mirror([0,1,0])
-//     //     slice(2,originalHeight);
+//     //     slice(2,NON_AI_RING_HEIGHT_MM);
 //     // rotate([0,0,-52])
 //     // mirror([0,1,0])
-//     //     slice(2,originalHeight);
+//     //     slice(2,NON_AI_RING_HEIGHT_MM);
         screw_hole();
     }
 }
@@ -190,20 +188,21 @@ module base(height_mm, inner_radius_mm, thickness_mm, num_clicks) {
  * @param thickness_mm thickness of the ridges
  * @param radius_mm inner radius of the ridges (outer radius of the base
                         aperture ring)
- * @param num_stops_under_f11 number of stops under f11
- * @param num_stops_over_f11 number of stops over f11
+ * @param aperture_stops list of aperture stops the lens has
  */
-module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, num_stops_under_f11, num_stops_over_f11) {
+module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, aperture_stops) {
+    STOPS_OVER_F11 = len([for (aperture = APERTURE_VALUES) if (aperture < 11) aperture]);
+    STOPS_UNDER_F11 = len([for (aperture = APERTURE_VALUES) if (aperture > 11) aperture]);
     intersection(){
         // Full rim around the entire circumference of the ring
         translate([0,0,start_z_mm])
             tube(height_mm,radius_mm,thickness_mm+1);
         union(){
             // EE Service coupler
-            rotate([0,0,num_stops_under_f11*APERTURE_CLICK_ANGLE_DEG-124])
+            rotate([0,0,STOPS_UNDER_F11*APERTURE_CLICK_ANGLE_DEG-124])
                 slice(8, start_z_mm+height_mm, radius_mm+3);
             // actual AI ridge
-            rotate([0,0,(-num_stops_over_f11+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG])
+            rotate([0,0,(-STOPS_OVER_F11+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG])
                 slice(54, start_z_mm+height_mm,radius_mm+3);
         }
     }
@@ -216,12 +215,12 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, num_stops_under
  * @param height_mm height of the ring
  * @param thickness_mm thickness of the ring
  */
-module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm) {
+module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm, outer_radius_mm) {
     // Thin ring that limits the rotation
     difference(){
         union(){
             translate([0,0,start_z_mm])
-                tube(height_mm,INNER_RADIUS_MM-thickness_mm,thickness_mm);
+                tube(height_mm,outer_radius_mm-thickness_mm,thickness_mm);
             //small ridge to help with printing (balcony)
             // can't tell what this is doing, the slicer seems to output
             // the same thing with or without this
@@ -229,7 +228,7 @@ module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm) {
             //     coneRim(0.5,INNER_RADIUS_MM-thickness_mm,thickness_mm);
         }
         mirror([0,1,0])
-            slice(75,originalHeight);
+            slice(75,NON_AI_RING_HEIGHT_MM);
     }
 }
 
@@ -254,10 +253,10 @@ module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
             translate([0,0,-1])
                 cylinder(1,radius_mm,radius_mm+thickness_mm);
         }
-        cylinder(originalHeight,radius_mm,radius_mm);   
+        cylinder(NON_AI_RING_HEIGHT_MM,radius_mm,radius_mm);   
         Radial_Array(30,12,radius_mm+SCALLOPS_RECESS_RADIUS_MM*0.55)
         rotate([0,0,90]) 
         scale([0.4,1,1])
-            cylinder(originalHeight+TOLERANCE,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
+            cylinder(NON_AI_RING_HEIGHT_MM+TOLERANCE,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
     }
 }
