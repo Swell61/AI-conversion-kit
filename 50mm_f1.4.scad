@@ -1,13 +1,14 @@
 use <rabbit-ears.scad>
 /**
     There are a few important components to the aperture ring. There is the
-    "ring" which is the base of the aperture ring. There are two inner
-    rings, one thin, one thick. The thin ring is what limits the rotation of
-    the aperture ring. The thick ring is what rides against the lens and 
-    contains the aperture click grooves. Finally, there is a hole into which a
-    screw is secure which trasfers the rotation of the aperture ring to the
-    lens. There may be more features to an aperture ring, but these are the
-    important ones for making something that will operate.
+    "ring" which is the base of the aperture ring to which other components
+    are attached. There are two inner rings, one thin, one thick. The thin
+    ring is what limits the rotation of the aperture ring. The thick ring is
+    what rides against the lens and contains the aperture click grooves.
+    Finally, there is a hole into which a screw is secured that transfers the
+    rotation of the aperture ring to the lens. There may be more features to
+    an aperture ring, but these are the important ones for making something
+    that will operate.
 
     Because it can be difficult to measure the diameter of the rim, and because
     there is no benefit (that I've seen so far) to considering the rim and the
@@ -19,14 +20,23 @@ use <rabbit-ears.scad>
     measurements are required:
         Inner diameter of thick ring
         Inner diameter of thin ring
+        Starting height position of the thin ring
         Thickness between inner thick ring surface and outer rim surface
         Aperture values of the lens
+    Also whether or not the rabbit ears should be added to the top of the
+    aperture ring needs to be specified.
+
+    This model is constructed with the aperture ring laying flat, with the
+    lens mount side of it at the bottom. The variables are named from this
+    perspective. To get to grips with it, open the model in OpenSCAD and
+    try changing some of the values.
 */
 
 // *****************************************************************
 // Lens specific parameters
 // *****************************************************************
 // Inner diameter of the part of the ring that rubs against the lens
+// (the "thick" ring).
 INNER_DIAMETER_MM = 60;
 // Thickness between part of ring that rubs against the lens to the
 // main outside part of the ring.
@@ -37,8 +47,7 @@ NON_AI_RING_HEIGHT_MM=16.0;
 APERTURE_VALUES = [16, 11, 8, 5.6, 4, 2.8, 2, 1.4];
 
 // Properties of the thin twist limiting ring
-TWIST_LIMIT_RING_THICKNESS_MM = 2;
-TWIST_LIMIT_RING_HEIGHT_MM = 1.4;
+TWIST_LIMIT_RING_INNER_DIAMETER = 56;
 TWIST_LIMIT_RING_Z_MM = 10;
 
 // Whether or not to add the rabbit ear coupler to the ring
@@ -50,16 +59,19 @@ PRINT_RABBIT_EARS = false;
 // (change if required)
 // *****************************************************************
 // Height of the Ai ridge
-AI_RIDGE_HEIGHT = 2.6;
+AI_RIDGE_HEIGHT_MM = 2.6;
 
-// These parameters that should be the same throughout the NIKKOR line
 // Angle the aperture ring moves per stop click
 APERTURE_CLICK_ANGLE_DEG = 7.15;
 
 // Scallop parameters
-SCALLOPS_HEIGHT_MM = 3.20; // Height of the fluted part of the aperture ring
-SCALLOPS_THICKNESS_MM = 2.2; // Thickness of the above part
-SCALLOPS_Z_MM = 5; // This should be defined per lens
+// Height of the fluted part of the aperture ring
+SCALLOPS_HEIGHT_MM = 3.2;
+// Thickness of the above part
+SCALLOPS_THICKNESS_MM = 2.2;
+
+// Properties of the thin twist limiting ring
+TWIST_LIMIT_RING_HEIGHT_MM = 1.4;
 // *****************************************************************
 
 // *****************************************************************
@@ -68,28 +80,35 @@ SCALLOPS_Z_MM = 5; // This should be defined per lens
 // This increases the resolution, increasing the number of fragments
 $fa = 3; // Minimum fragment angle (default 12)
 $fs = 1; // Minimum size of a fragment (default 2)
-TOLERANCE = 0.1; //this is used so that the F5 openscad preview looks better
+// The overlap that is used to ensure OpenSCAD knows which parts are
+// considered as "one" part. See 
+// https://en.wikibooks.org/wiki/OpenSCAD_Tutorial/Chapter_1#Adding_more_objects_and_translating_objects
+TOLERANCE = 0.1;
 
-//intermediate values
+// Intermediate values
 OUTER_DIAMETER_MM = INNER_DIAMETER_MM + THICKNESS_MM;
 INNER_RADIUS_MM = INNER_DIAMETER_MM / 2;
 OUTER_RADIUS_MM = OUTER_DIAMETER_MM / 2;
-AI_RING_HEIGHT = NON_AI_RING_HEIGHT_MM - AI_RIDGE_HEIGHT;
+AI_RING_HEIGHT_MM = NON_AI_RING_HEIGHT_MM - AI_RIDGE_HEIGHT_MM;
+// Scallop ring will be half way up the aperture ring
+SCALLOPS_Z_MM = (AI_RING_HEIGHT_MM / 2) - (SCALLOPS_HEIGHT_MM / 2);
+TWIST_LIMIT_RING_THICKNESS_MM =
+    (INNER_DIAMETER_MM - TWIST_LIMIT_RING_INNER_DIAMETER) / 2;
 // *****************************************************************
 
 // *****************************************************************
 // Draw the model
 // *****************************************************************
 base(
-    AI_RING_HEIGHT, 
+    AI_RING_HEIGHT_MM, 
     INNER_RADIUS_MM,
     THICKNESS_MM,
     APERTURE_VALUES,
     TWIST_LIMIT_RING_Z_MM
 );
 ai_ridges(
-    AI_RING_HEIGHT,
-    AI_RIDGE_HEIGHT,
+    AI_RING_HEIGHT_MM,
+    AI_RIDGE_HEIGHT_MM,
     THICKNESS_MM,
     INNER_RADIUS_MM,
     APERTURE_VALUES
@@ -107,21 +126,12 @@ scallops(
     SCALLOPS_THICKNESS_MM
 );
 if (PRINT_RABBIT_EARS)
-    place_rabbit_ears(AI_RING_HEIGHT, INNER_RADIUS_MM+THICKNESS_MM);
+    place_rabbit_ears(AI_RING_HEIGHT_MM, INNER_RADIUS_MM + THICKNESS_MM);
 // *****************************************************************
 
 // *****************************************************************
 // Helper modules
 // *****************************************************************
-/**
- * Hole for the coupling screw
- */
-module screw_hole() {
-    rotate([0, 0, 7])
-    translate([-INNER_RADIUS_MM - THICKNESS_MM - TOLERANCE * 2, 0, 2.6])
-    rotate([90, 0, 90])
-        cylinder(7, r=0.75, $fn=16);
-}
 
 /**
  * Clockwise radial array of child objects rotated around the local z axis   
@@ -133,7 +143,7 @@ module Radial_Array(angle, num_elems, radius) {
     for (elem_idx = [0 : num_elems - 1]) {
         rotate([0, 0, -(angle * elem_idx)])
         translate([0, radius, 0])
-            for (k = [0 : $children - 1]) child(k);
+            for (k = [0 : $children - 1]) children(k);
     }
 }
 
@@ -199,21 +209,24 @@ module tube(height_mm, inner_radius_mm, thickness_mm) {
  * @param height_mm height of ring
  * @param inner_radius_mm inner radius of ring
  * @param thickness_mm thickness of ring
- * @param num_clicks number of aperture clicks required
+ * @param aperture_values aperture values on the aperture ring
+ * @param click_ridge_height_mm height of each of the click ridges
  */
 module base(height_mm, inner_radius_mm, thickness_mm, aperture_values,
             click_ridge_height_mm) {
     APERTURE_CLICKS = len(aperture_values);
     inner_diameter_mm = 2 * inner_radius_mm;
     difference(){
-        // Ring minus the screw hole
+        // Base ring
         tube(height_mm, inner_radius_mm, thickness_mm);
-        // Tapered lip to deal with any rim. Might need moving down slightly
+        // Add tapered lip to deal with any rim on the lens
         cylinder(1.8, d1=inner_diameter_mm + thickness_mm, d2=inner_diameter_mm);
+        // Add the click ridges
         rotate([0, 0, 7]) // Needs computing rather than hard coding
-        Radial_Array(APERTURE_CLICK_ANGLE_DEG, num_clicks, inner_radius_mm)
+        Radial_Array(APERTURE_CLICK_ANGLE_DEG, APERTURE_CLICKS, inner_radius_mm)
             // Click ridges will run up to the twist limit ring
             cylinder(click_ridge_height_mm, 0.7, 0.7);
+        // Add the coupling screw hole
         screw_hole();
     }
 }
@@ -250,19 +263,18 @@ function stops_under_f11(aperture_values) =
  * Big tab tells the camera the currently selected aperture, small tab is the
  * EE Servo coupler.
  *
- * @param start_z_mm startpoint in mm for the ridges (height of base aperture
-                        ring)
+ * @param start_z_mm startpoint in for the ridges (top of the aperture ring)
  * @param height_mm height of the ridges
  * @param thickness_mm thickness of the ridges
  * @param radius_mm inner radius of the ridges (outer radius of the base
                         aperture ring)
- * @param aperture_stops list of aperture stops the lens has
+ * @param aperture_values list of aperture values the lens has
  */
 module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, 
-                 aperture_stops) {
-    echo(aperture_stops);
-    STOPS_OVER_F11 = stops_over_f11(aperture_stops);
-    STOPS_UNDER_F11 = stops_under_f11(aperture_stops);
+                 aperture_values) {
+    echo(aperture_values);
+    STOPS_OVER_F11 = stops_over_f11(aperture_values);
+    STOPS_UNDER_F11 = stops_under_f11(aperture_values);
     // See http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos
     AI_RIDGE_POSITION = min(aperture_values) <= 1.8 ? 5 : 4.66;
     intersection(){
@@ -273,7 +285,7 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm,
             // EE Service coupler
             rotate([0, 0, STOPS_UNDER_F11 * APERTURE_CLICK_ANGLE_DEG - 124])
                 slice(8, start_z_mm + height_mm, radius_mm + 3);
-            // actual AI ridge
+            // Actual AI ridge
             rotate([0, 0, (-STOPS_OVER_F11 + AI_RIDGE_POSITION)
                             * APERTURE_CLICK_ANGLE_DEG]
                   )
@@ -291,7 +303,6 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm,
  */
 module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm,
                               outer_radius_mm) {
-    // Thin ring that limits the rotation
     difference(){
         translate([0, 0, start_z_mm])
             tube(height_mm, outer_radius_mm - thickness_mm, thickness_mm);
@@ -311,15 +322,17 @@ module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm,
  * @param thickness_mm thickness of the scalloped ridges
  */
 module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
-    SCALLOPS_RECESS_RADIUS_MM = 6; //the recess circle radius
-    HEIGHT_OF_BEVEL = 1;
+    SCALLOPS_RECESS_RADIUS_MM = 6; // The recess circle radius
+    HEIGHT_OF_BEVEL = 1; // Bevelled edge above and below the scallop ring
     difference(){
         // Add a ring around the outside of the aperture ring
         translate([0, 0, start_z_mm])
         union() {
             tube(height_mm, radius_mm, thickness_mm);
+            // Top bevel
             translate([0, 0, height_mm])
                 cylinder(HEIGHT_OF_BEVEL, radius_mm + thickness_mm, radius_mm);
+            // Bottom bevel
             translate([0, 0, -1])
                 cylinder(HEIGHT_OF_BEVEL, radius_mm, radius_mm + thickness_mm);
         }
@@ -337,6 +350,16 @@ module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
                      SCALLOPS_RECESS_RADIUS_MM,
                      SCALLOPS_RECESS_RADIUS_MM);
     }
+}
+
+/**
+ * Hole for the coupling screw
+ */
+module screw_hole() {
+    rotate([0, 0, 7])
+    translate([-INNER_RADIUS_MM - THICKNESS_MM - TOLERANCE * 2, 0, 2.6])
+    rotate([90, 0, 90])
+        cylinder(7, r=0.75, $fn=16);
 }
 
 /**
