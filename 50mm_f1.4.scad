@@ -222,7 +222,7 @@ module base(height_mm, inner_radius_mm, thickness_mm, aperture_values,
         // Add tapered lip to deal with any rim on the lens
         cylinder(1.8, d1=inner_diameter_mm + thickness_mm, d2=inner_diameter_mm);
         // Add the click ridges
-        rotate([0, 0, 7]) // Needs computing rather than hard coding
+        rotate([0, 0, 7]) // TODO: Needs computing rather than hard coding
         Radial_Array(APERTURE_CLICK_ANGLE_DEG, APERTURE_CLICKS, inner_radius_mm)
             // Click ridges will run up to the twist limit ring
             cylinder(click_ridge_height_mm, 0.7, 0.7);
@@ -289,6 +289,7 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm,
             rotate([0, 0, (-STOPS_OVER_F11 + AI_RIDGE_POSITION)
                             * APERTURE_CLICK_ANGLE_DEG]
                   )
+                // TODO: See if 54 is constant or should be variable
                 slice(54, start_z_mm + height_mm, radius_mm + 3);
         }
     }
@@ -307,7 +308,7 @@ module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm,
         translate([0, 0, start_z_mm])
             tube(height_mm, outer_radius_mm - thickness_mm, thickness_mm);
         mirror([0, 1, 0])
-            // 75 needs computing
+            // TODO: 75 needs changing to a computed value
             slice(75, start_z_mm + height_mm + TOLERANCE, outer_radius_mm);
     }
 }
@@ -356,7 +357,7 @@ module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
  * Hole for the coupling screw
  */
 module screw_hole() {
-    rotate([0, 0, 7])
+    rotate([0, 0, 7]) // TODO: Needs computing rather than hard coding
     translate([-INNER_RADIUS_MM - THICKNESS_MM - TOLERANCE * 2, 0, 2.6])
     rotate([90, 0, 90])
         cylinder(7, r=0.75, $fn=16);
