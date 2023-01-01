@@ -26,10 +26,10 @@
 
 //lens specific parameters
 // Inner diameter of the part of the ring that rubs against the lens
-inner_diameter=60.6;
+inner_diameter=60;
 // Thickness between part of ring that rubs against the lens to the
 // main outside part of the ring.
-thickness=1.6;
+thickness=1.2;
 originalHeight=16.0; // Original non AI ring height
 apertureClicks=8; //how many aperture clicks does this lens have
 AIridgePosition=5; //see http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos
@@ -38,7 +38,7 @@ STOPS_OVER_F11 = 6;
 STOPS_UNDER_F11 = 1;
 
 TWIST_LIMIT_RING_THICKNESS_MM = 2;
-TWIST_LIMIT_RING_HEIGHT_MM = 1.9;
+TWIST_LIMIT_RING_HEIGHT_MM = 1.4;
 TWIST_LIMIT_RING_Z_MM = 10;
 
 AI_RIDGE_HEIGHT = 2.6; //the height that you would actually need to file if you did the conversion by modifying the original aperture ring
