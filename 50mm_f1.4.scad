@@ -53,11 +53,12 @@ PRINT_RABBIT_EARS = false;
 AI_RIDGE_HEIGHT = 2.6;
 
 // These parameters that should be the same throughout the NIKKOR line
-APERTURE_CLICK_ANGLE_DEG = 7.15; // I think this is the angle the aperture ring moves for each stop click
+// Angle the aperture ring moves per stop click
+APERTURE_CLICK_ANGLE_DEG = 7.15;
 
 // Scallop parameters
-SCALLOPS_HEIGHT_MM = 3.20; //the height of the fluted part of the aperture ring (cosmetic)
-SCALLOPS_THICKNESS_MM = 2.2; //the thickness of the above part (cosmetic)
+SCALLOPS_HEIGHT_MM = 3.20; // Height of the fluted part of the aperture ring
+SCALLOPS_THICKNESS_MM = 2.2; // Thickness of the above part
 SCALLOPS_Z_MM = 5; // This should be defined per lens
 // *****************************************************************
 
@@ -73,14 +74,15 @@ TOLERANCE = 0.1; //this is used so that the F5 openscad preview looks better
 OUTER_DIAMETER_MM = INNER_DIAMETER_MM + THICKNESS_MM;
 INNER_RADIUS_MM = INNER_DIAMETER_MM / 2;
 OUTER_RADIUS_MM = OUTER_DIAMETER_MM / 2;
+AI_RING_HEIGHT = NON_AI_RING_HEIGHT_MM - AI_RIDGE_HEIGHT;
 // *****************************************************************
 
-base(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, INNER_RADIUS_MM, THICKNESS_MM, APERTURE_VALUES, TWIST_LIMIT_RING_Z_MM);
-ai_ridges(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, AI_RIDGE_HEIGHT, THICKNESS_MM, INNER_RADIUS_MM, STOPS_UNDER_F11, STOPS_OVER_F11);
+base(AI_RING_HEIGHT, INNER_RADIUS_MM, THICKNESS_MM, APERTURE_VALUES, TWIST_LIMIT_RING_Z_MM);
+ai_ridges(AI_RING_HEIGHT, AI_RIDGE_HEIGHT, THICKNESS_MM, INNER_RADIUS_MM, STOPS_UNDER_F11, STOPS_OVER_F11);
 rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM, INNER_RADIUS_MM);
 scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, OUTER_RADIUS_MM, SCALLOPS_THICKNESS_MM);
 if (PRINT_RABBIT_EARS)
-    place_rabbit_ears(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, INNER_RADIUS_MM+THICKNESS_MM);
+    place_rabbit_ears(AI_RING_HEIGHT, INNER_RADIUS_MM+THICKNESS_MM);
 
 module screw_hole(){
     rotate([0, 0, 7])
@@ -130,20 +132,6 @@ module tube(height_mm, inner_radius_mm, thickness_mm){
     }
 }
 
-// See usage comment
-// module coneRim(height,INNER_RADIUS_MM,thickness){
-//     outerRadius = INNER_RADIUS_MM+thickness;
-//     TOLERANCE=2;
-//     difference(){
-//         cylinder(height,outerRadius,outerRadius);
-//         union(){
-// 			cylinder(height,outerRadius,INNER_RADIUS_MM);
-// 			translate([0,0,-TOLERANCE/2])
-//                 cylinder(height+TOLERANCE,INNER_RADIUS_MM,INNER_RADIUS_MM); //this just helps to create a nice preview
-// 		}
-//     }
-// }
-
 /**
  * Standard right-angled triangle (tangent version)
  *
@@ -179,12 +167,6 @@ module base(height_mm, inner_radius_mm, thickness_mm, aperture_values, click_rid
         Radial_Array(APERTURE_CLICK_ANGLE_DEG, num_clicks, inner_radius_mm)
             // Click ridges will run up to the twist limit ring
             cylinder(click_ridge_height_mm, 0.7, 0.7);
-       // Not sure what these cuts are for
-//     // mirror([0,1,0])
-//     //     slice(2,NON_AI_RING_HEIGHT_MM);
-//     // rotate([0,0,-52])
-//     // mirror([0,1,0])
-//     //     slice(2,NON_AI_RING_HEIGHT_MM);
         screw_hole();
     }
 }
@@ -232,17 +214,11 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, aperture_stops)
 module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm, outer_radius_mm) {
     // Thin ring that limits the rotation
     difference(){
-        union(){
-            translate([0, 0, start_z_mm])
-                tube(height_mm, outer_radius_mm - thickness_mm, thickness_mm);
-            //small ridge to help with printing (balcony)
-            // can't tell what this is doing, the slicer seems to output
-            // the same thing with or without this
-            // translate([0,0,start_z_mm])
-            //     coneRim(0.5,INNER_RADIUS_MM-thickness_mm,thickness_mm);
-        }
+        translate([0, 0, start_z_mm])
+            tube(height_mm, outer_radius_mm - thickness_mm, thickness_mm);
         mirror([0, 1, 0])
-            slice(75, NON_AI_RING_HEIGHT_MM);
+            // 75 needs computing
+            slice(75, start_z_mm + height_mm + TOLERANCE);
     }
 }
 
@@ -256,22 +232,25 @@ module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm, outer_radius_
  * @param thickness_mm thickness of the scalloped ridges
  */
 module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
-    SCALLOPS_RECESS_RADIUS_MM=6; //the recess circle radius (cosmetic)
-    // Scallops
+    SCALLOPS_RECESS_RADIUS_MM = 6; //the recess circle radius
+    HEIGHT_OF_BEVEL = 1;
     difference(){
+        // Add a ring around the outside of the aperture ring
         translate([0, 0, start_z_mm])
         union() {
-            cylinder(height_mm, radius_mm + thickness_mm, radius_mm + thickness_mm);
+            tube(height_mm, radius_mm, thickness_mm);
             translate([0, 0, height_mm])
-                cylinder(1, radius_mm + thickness_mm, radius_mm);
+                cylinder(HEIGHT_OF_BEVEL, radius_mm + thickness_mm, radius_mm);
             translate([0, 0, -1])
-                cylinder(1, radius_mm, radius_mm + thickness_mm);
+                cylinder(HEIGHT_OF_BEVEL, radius_mm, radius_mm + thickness_mm);
         }
-        cylinder(NON_AI_RING_HEIGHT_MM, radius_mm, radius_mm);   
+        // Cut out the middle of the cylinder
+        cylinder(start_z_mm + height_mm + HEIGHT_OF_BEVEL + TOLERANCE, radius_mm, radius_mm);
+        // Cut the ridges into the ring   
         Radial_Array(30, 12, radius_mm + SCALLOPS_RECESS_RADIUS_MM * 0.55)
-        rotate([0,0,90]) 
-        scale([0.4,1,1])
-            cylinder(NON_AI_RING_HEIGHT_MM+TOLERANCE, SCALLOPS_RECESS_RADIUS_MM, SCALLOPS_RECESS_RADIUS_MM);
+        rotate([0, 0, 90]) 
+        scale([0.4, 1, 1])
+            cylinder(start_z_mm + height_mm + HEIGHT_OF_BEVEL + TOLERANCE, SCALLOPS_RECESS_RADIUS_MM, SCALLOPS_RECESS_RADIUS_MM);
     }
 }
 
@@ -288,6 +267,6 @@ module place_rabbit_ears(height_mm, outer_radius_mm) {
     rotate(-ROTATION_OFFSET)
     // Move the rabbit ears model to the top of the aperture ring
     translate([outer_radius_mm, 0, height_mm])
-    rotate([90,0,90])
+    rotate([90, 0, 90])
         rabbit_ears(slope=8);
 }
