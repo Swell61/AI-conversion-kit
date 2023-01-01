@@ -83,9 +83,9 @@ if (PRINT_RABBIT_EARS)
     place_rabbit_ears(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, INNER_RADIUS_MM+THICKNESS_MM);
 
 module screw_hole(){
-    rotate([0,0,7])
-    translate([-INNER_RADIUS_MM-THICKNESS_MM-TOLERANCE*2,0,2.6])
-    rotate([90,0,90])
+    rotate([0, 0, 7])
+    translate([-INNER_RADIUS_MM - THICKNESS_MM - TOLERANCE * 2, 0, 2.6])
+    rotate([90, 0, 90])
         cylinder(7, r=0.75, $fn=16);
 }
 
@@ -105,12 +105,12 @@ module Radial_Array(a,n,r)
  }
 }
 
-module slice(angle, height,radius=INNER_RADIUS_MM){
+module slice(angle, height, radius=INNER_RADIUS_MM){
     intersection() {
-        mirror([1,0,0])
-        translate([-radius*1.2,0,0])
+        mirror([1, 0, 0])
+        translate([-radius * 1.2, 0, 0])
             a_triangle(angle, radius*1.2, height);  
-        cylinder(height,radius,radius);
+        cylinder(height, radius, radius);
     }
 }
 
@@ -126,7 +126,7 @@ module tube(height_mm, inner_radius_mm, thickness_mm){
     difference(){
         cylinder(height_mm, outerRadius, outerRadius);
         translate([0, 0, -TOLERANCE/2]) 
-            cylinder(height_mm+TOLERANCE, inner_radius_mm, inner_radius_mm);
+            cylinder(height_mm + TOLERANCE, inner_radius_mm, inner_radius_mm);
     }
 }
 
@@ -174,11 +174,11 @@ module base(height_mm, inner_radius_mm, thickness_mm, aperture_values, click_rid
         // Ring minus the screw hole
         tube(height_mm, inner_radius_mm, thickness_mm);
         // Tapered lip to deal with any rim. Might need moving down slightly
-        cylinder(1.8, d1=inner_diameter_mm+thickness_mm, d2=inner_diameter_mm);
+        cylinder(1.8, d1=inner_diameter_mm + thickness_mm, d2=inner_diameter_mm);
         rotate([0, 0, 7]) // Needs computing rather than hard coding
         Radial_Array(APERTURE_CLICK_ANGLE_DEG, num_clicks, inner_radius_mm)
             // Click ridges will run up to the twist limit ring
-            cylinder(click_ridge_height_mm,0.7,0.7);
+            cylinder(click_ridge_height_mm, 0.7, 0.7);
        // Not sure what these cuts are for
 //     // mirror([0,1,0])
 //     //     slice(2,NON_AI_RING_HEIGHT_MM);
@@ -209,15 +209,15 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, aperture_stops)
     AI_RIDGE_POSITION = min(aperture_values) <= 1.8 ? 5 : 4.66;
     intersection(){
         // Full rim around the entire circumference of the ring
-        translate([0,0,start_z_mm])
-            tube(height_mm,radius_mm,thickness_mm+1);
+        translate([0, 0, start_z_mm])
+            tube(height_mm, radius_mm, thickness_mm + 1);
         union(){
             // EE Service coupler
-            rotate([0,0,STOPS_UNDER_F11*APERTURE_CLICK_ANGLE_DEG-124])
-                slice(8, start_z_mm+height_mm, radius_mm+3);
+            rotate([0, 0, STOPS_UNDER_F11 * APERTURE_CLICK_ANGLE_DEG - 124])
+                slice(8, start_z_mm + height_mm, radius_mm + 3);
             // actual AI ridge
-            rotate([0,0,(-STOPS_OVER_F11+AI_RIDGE_POSITION)*APERTURE_CLICK_ANGLE_DEG])
-                slice(54, start_z_mm+height_mm,radius_mm+3);
+            rotate([0, 0, (-STOPS_OVER_F11 + AI_RIDGE_POSITION) * APERTURE_CLICK_ANGLE_DEG])
+                slice(54, start_z_mm + height_mm, radius_mm + 3);
         }
     }
 }
@@ -233,16 +233,16 @@ module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm, outer_radius_
     // Thin ring that limits the rotation
     difference(){
         union(){
-            translate([0,0,start_z_mm])
-                tube(height_mm,outer_radius_mm-thickness_mm,thickness_mm);
+            translate([0, 0, start_z_mm])
+                tube(height_mm, outer_radius_mm - thickness_mm, thickness_mm);
             //small ridge to help with printing (balcony)
             // can't tell what this is doing, the slicer seems to output
             // the same thing with or without this
             // translate([0,0,start_z_mm])
             //     coneRim(0.5,INNER_RADIUS_MM-thickness_mm,thickness_mm);
         }
-        mirror([0,1,0])
-            slice(75,NON_AI_RING_HEIGHT_MM);
+        mirror([0, 1, 0])
+            slice(75, NON_AI_RING_HEIGHT_MM);
     }
 }
 
@@ -259,19 +259,19 @@ module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
     SCALLOPS_RECESS_RADIUS_MM=6; //the recess circle radius (cosmetic)
     // Scallops
     difference(){
-        translate([0,0,start_z_mm])
+        translate([0, 0, start_z_mm])
         union() {
-            cylinder(height_mm,radius_mm+thickness_mm,radius_mm+thickness_mm);
-            translate([0,0,height_mm])
-                cylinder(1,radius_mm+thickness_mm,radius_mm);
-            translate([0,0,-1])
-                cylinder(1,radius_mm,radius_mm+thickness_mm);
+            cylinder(height_mm, radius_mm + thickness_mm, radius_mm + thickness_mm);
+            translate([0, 0, height_mm])
+                cylinder(1, radius_mm + thickness_mm, radius_mm);
+            translate([0, 0, -1])
+                cylinder(1, radius_mm, radius_mm + thickness_mm);
         }
-        cylinder(NON_AI_RING_HEIGHT_MM,radius_mm,radius_mm);   
-        Radial_Array(30,12,radius_mm+SCALLOPS_RECESS_RADIUS_MM*0.55)
+        cylinder(NON_AI_RING_HEIGHT_MM, radius_mm, radius_mm);   
+        Radial_Array(30, 12, radius_mm + SCALLOPS_RECESS_RADIUS_MM * 0.55)
         rotate([0,0,90]) 
         scale([0.4,1,1])
-            cylinder(NON_AI_RING_HEIGHT_MM+TOLERANCE,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
+            cylinder(NON_AI_RING_HEIGHT_MM+TOLERANCE, SCALLOPS_RECESS_RADIUS_MM, SCALLOPS_RECESS_RADIUS_MM);
     }
 }
 
