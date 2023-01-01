@@ -16,6 +16,12 @@
     small and if printed directly onto the aperture ring, the text would be
     sliced from front to back, rather than one "layer" at a time (the text
     would be stood up veritcally from the perspective of the printer).
+
+    NOTE: It is recommended to use two colours for the scales - one colour for
+    the bottom plate and a different colour for the text. I used the "Filament
+    Change" Post Processing Plugin in Cura to achieve this on an Ender 3 S1.
+    If doing this, you will want to print the ADR scale separately (set
+    PRINT_APERTURE_RING to false in common.scad).
 */
 include <common.scad>
 

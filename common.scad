@@ -20,10 +20,14 @@ APERTURE_VALUES = [16, 11, 8, 5.6, 4, 2.8, 2, 1.4];
 TWIST_LIMIT_RING_INNER_DIAMETER = 56;
 TWIST_LIMIT_RING_Z_MM = 10;
 
-// Whether or not to add the rabbit ear coupler to the ring
+// Whether or not to print the aperture ring
+PRINT_APERTURE_RING = true;
+// Whether or not to add the rabbit ear coupler to the ring (if
+// PRINT_APERTURE_RING is false, this will have no effect).
 PRINT_RABBIT_EARS = false;
 // Whether or not to print the ADR scale (see aperture_text.scad)
-PRINT_ADR_SCALE = true;
+// See aperture_text.scad for usage of this variable.
+PRINT_ADR_SCALE = false;
 // *****************************************************************
 
 // *****************************************************************

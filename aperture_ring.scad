@@ -38,34 +38,36 @@ use <rabbit-ears.scad>
 // *****************************************************************
 // Draw the model
 // *****************************************************************
-base(
-    AI_RING_HEIGHT_MM, 
-    INNER_RADIUS_MM,
-    THICKNESS_MM,
-    APERTURE_VALUES,
-    TWIST_LIMIT_RING_Z_MM
-);
-ai_ridges(
-    AI_RING_HEIGHT_MM,
-    AI_RIDGE_HEIGHT_MM,
-    THICKNESS_MM,
-    INNER_RADIUS_MM,
-    APERTURE_VALUES
-);
-rotation_limiting_ring(
-    TWIST_LIMIT_RING_Z_MM,
-    TWIST_LIMIT_RING_HEIGHT_MM,
-    TWIST_LIMIT_RING_THICKNESS_MM,
-    INNER_RADIUS_MM
-);
-scallops(
-    SCALLOPS_Z_MM,
-    SCALLOPS_HEIGHT_MM,
-    OUTER_RADIUS_MM,
-    SCALLOPS_THICKNESS_MM
-);
-if (PRINT_RABBIT_EARS)
-    place_rabbit_ears(AI_RING_HEIGHT_MM, INNER_RADIUS_MM + THICKNESS_MM);
+if (PRINT_APERTURE_RING) {
+    base(
+        AI_RING_HEIGHT_MM, 
+        INNER_RADIUS_MM,
+        THICKNESS_MM,
+        APERTURE_VALUES,
+        TWIST_LIMIT_RING_Z_MM
+    );
+    ai_ridges(
+        AI_RING_HEIGHT_MM,
+        AI_RIDGE_HEIGHT_MM,
+        THICKNESS_MM,
+        INNER_RADIUS_MM,
+        APERTURE_VALUES
+    );
+    rotation_limiting_ring(
+        TWIST_LIMIT_RING_Z_MM,
+        TWIST_LIMIT_RING_HEIGHT_MM,
+        TWIST_LIMIT_RING_THICKNESS_MM,
+        INNER_RADIUS_MM
+    );
+    scallops(
+        SCALLOPS_Z_MM,
+        SCALLOPS_HEIGHT_MM,
+        OUTER_RADIUS_MM,
+        SCALLOPS_THICKNESS_MM
+    );
+    if (PRINT_RABBIT_EARS)
+        place_rabbit_ears(AI_RING_HEIGHT_MM, INNER_RADIUS_MM + THICKNESS_MM);
+}
 if (PRINT_ADR_SCALE)
     place_adr_scale(OUTER_DIAMETER_MM, APERTURE_VALUES);
 // *****************************************************************
