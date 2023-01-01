@@ -77,58 +77,76 @@ OUTER_RADIUS_MM = OUTER_DIAMETER_MM / 2;
 AI_RING_HEIGHT = NON_AI_RING_HEIGHT_MM - AI_RIDGE_HEIGHT;
 // *****************************************************************
 
-base(AI_RING_HEIGHT, INNER_RADIUS_MM, THICKNESS_MM, APERTURE_VALUES, TWIST_LIMIT_RING_Z_MM);
-ai_ridges(AI_RING_HEIGHT, AI_RIDGE_HEIGHT, THICKNESS_MM, INNER_RADIUS_MM, STOPS_UNDER_F11, STOPS_OVER_F11);
-rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM, INNER_RADIUS_MM);
-scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, OUTER_RADIUS_MM, SCALLOPS_THICKNESS_MM);
+base(
+    AI_RING_HEIGHT, 
+    INNER_RADIUS_MM,
+    THICKNESS_MM,
+    APERTURE_VALUES,
+    TWIST_LIMIT_RING_Z_MM
+);
+ai_ridges(
+    AI_RING_HEIGHT,
+    AI_RIDGE_HEIGHT,
+    THICKNESS_MM,
+    INNER_RADIUS_MM,
+    STOPS_UNDER_F11,
+    STOPS_OVER_F11
+);
+rotation_limiting_ring(
+    TWIST_LIMIT_RING_Z_MM,
+    TWIST_LIMIT_RING_HEIGHT_MM,
+    TWIST_LIMIT_RING_THICKNESS_MM,
+    INNER_RADIUS_MM
+);
+scallops(
+    SCALLOPS_Z_MM,
+    SCALLOPS_HEIGHT_MM,
+    OUTER_RADIUS_MM,
+    SCALLOPS_THICKNESS_MM
+);
 if (PRINT_RABBIT_EARS)
     place_rabbit_ears(AI_RING_HEIGHT, INNER_RADIUS_MM+THICKNESS_MM);
 
-module screw_hole(){
+// *****************************************************************
+// Helper modules
+// *****************************************************************
+/**
+ * Hole for the coupling screw
+ */
+module screw_hole() {
     rotate([0, 0, 7])
     translate([-INNER_RADIUS_MM - THICKNESS_MM - TOLERANCE * 2, 0, 2.6])
     rotate([90, 0, 90])
         cylinder(7, r=0.75, $fn=16);
 }
 
-//Radial_Array(a,n,r){child object}
-// produces a clockwise radial array of child objects rotated around the local z axis   
-// a= interval angle 
-// n= number of objects 
-// r= radius distance 
-//
-module Radial_Array(a,n,r)
-{
- for (k=[0:n-1])
- {
- rotate([0,0,-(a*k)])
- translate([0,r,0])
- for (k = [0:$children-1]) child(k);
- }
+/**
+ * Clockwise radial array of child objects rotated around the local z axis   
+ * @param angle interval angle 
+ * @param num_elems number of elements
+ * @param radius distance 
+ */
+module Radial_Array(angle, num_elems, radius) {
+    for (elem_idx = [0 : num_elems - 1]) {
+        rotate([0,0,-(angle * elem_idx)])
+        translate([0,radius,0])
+            for (k = [0:$children-1]) child(k);
+    }
 }
 
-module slice(angle, height, radius=INNER_RADIUS_MM){
+/**
+ * Slice of a cylinder
+ *
+ * @param angle of slice
+ * @param height of slice
+ * @param radius of slice
+ */
+module slice(angle, height, radius) {
     intersection() {
         mirror([1, 0, 0])
         translate([-radius * 1.2, 0, 0])
             a_triangle(angle, radius*1.2, height);  
         cylinder(height, radius, radius);
-    }
-}
-
-/**
- * Hollow cylinder
- *
- * @param height_mm of tube
- * @param inner_radius_mm of tube
- * @param thickness_mm of tube
- */
-module tube(height_mm, inner_radius_mm, thickness_mm){
-    outerRadius = inner_radius_mm + thickness_mm;
-    difference(){
-        cylinder(height_mm, outerRadius, outerRadius);
-        translate([0, 0, -TOLERANCE/2]) 
-            cylinder(height_mm + TOLERANCE, inner_radius_mm, inner_radius_mm);
     }
 }
 
@@ -139,14 +157,39 @@ module tube(height_mm, inner_radius_mm, thickness_mm){
  * @param number a_len Lenght of the adjacent side
  * @param number depth How wide/deep the triangle is in the 3rd dimension
  */
-module a_triangle(tan_angle, a_len, depth)
-{
+module a_triangle(tan_angle, a_len, depth) {
     linear_extrude(height=depth)
     {
-        polygon(points=[[0,0],[a_len,0],[0,tan(tan_angle) * a_len]], paths=[[0,1,2]]);
+        polygon(
+            points=[
+                [0, 0],
+                [a_len, 0],
+                [0, tan(tan_angle) * a_len]],
+                paths=[[0,1,2]]
+        );
     }
 }
 
+/**
+ * Hollow cylinder
+ *
+ * @param height_mm of tube
+ * @param inner_radius_mm of tube
+ * @param thickness_mm of tube
+ */
+module tube(height_mm, inner_radius_mm, thickness_mm) {
+    outerRadius = inner_radius_mm + thickness_mm;
+    difference(){
+        cylinder(height_mm, outerRadius, outerRadius);
+        translate([0, 0, -TOLERANCE/2]) 
+            cylinder(height_mm + TOLERANCE, inner_radius_mm, inner_radius_mm);
+    }
+}
+// *****************************************************************
+
+// *****************************************************************
+// Component modules
+// *****************************************************************
 /**
  * Base aperture ring with a tapered bottom and aperture click ridges
  *
@@ -155,7 +198,8 @@ module a_triangle(tan_angle, a_len, depth)
  * @param thickness_mm thickness of ring
  * @param num_clicks number of aperture clicks required
  */
-module base(height_mm, inner_radius_mm, thickness_mm, aperture_values, click_ridge_height_mm) {
+module base(height_mm, inner_radius_mm, thickness_mm, aperture_values,
+            click_ridge_height_mm) {
     APERTURE_CLICKS = len(aperture_values);
     inner_diameter_mm = 2 * inner_radius_mm;
     difference(){
@@ -184,10 +228,13 @@ module base(height_mm, inner_radius_mm, thickness_mm, aperture_values, click_rid
                         aperture ring)
  * @param aperture_stops list of aperture stops the lens has
  */
-module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, aperture_stops) {
-    STOPS_OVER_F11 = len([for (aperture = APERTURE_VALUES) if (aperture < 11) aperture]);
-    STOPS_UNDER_F11 = len([for (aperture = APERTURE_VALUES) if (aperture > 11) aperture]);
-    // See http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos for the following
+module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, 
+                 aperture_stops) {
+    STOPS_OVER_F11 =
+        len([for (aperture = APERTURE_VALUES) if (aperture < 11) aperture]);
+    STOPS_UNDER_F11 =
+        len([for (aperture = APERTURE_VALUES) if (aperture > 11) aperture]);
+    // See http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos
     AI_RIDGE_POSITION = min(aperture_values) <= 1.8 ? 5 : 4.66;
     intersection(){
         // Full rim around the entire circumference of the ring
@@ -198,7 +245,9 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, aperture_stops)
             rotate([0, 0, STOPS_UNDER_F11 * APERTURE_CLICK_ANGLE_DEG - 124])
                 slice(8, start_z_mm + height_mm, radius_mm + 3);
             // actual AI ridge
-            rotate([0, 0, (-STOPS_OVER_F11 + AI_RIDGE_POSITION) * APERTURE_CLICK_ANGLE_DEG])
+            rotate([0, 0, (-STOPS_OVER_F11 + AI_RIDGE_POSITION)
+                            * APERTURE_CLICK_ANGLE_DEG]
+                  )
                 slice(54, start_z_mm + height_mm, radius_mm + 3);
         }
     }
@@ -211,14 +260,15 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, aperture_stops)
  * @param height_mm height of the ring
  * @param thickness_mm thickness of the ring
  */
-module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm, outer_radius_mm) {
+module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm,
+                              outer_radius_mm) {
     // Thin ring that limits the rotation
     difference(){
         translate([0, 0, start_z_mm])
             tube(height_mm, outer_radius_mm - thickness_mm, thickness_mm);
         mirror([0, 1, 0])
             // 75 needs computing
-            slice(75, start_z_mm + height_mm + TOLERANCE);
+            slice(75, start_z_mm + height_mm + TOLERANCE, outer_radius_mm);
     }
 }
 
@@ -244,13 +294,19 @@ module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
             translate([0, 0, -1])
                 cylinder(HEIGHT_OF_BEVEL, radius_mm, radius_mm + thickness_mm);
         }
+        TOP_OF_BEVEL_CYLINDERS_MM = (start_z_mm
+                                     + height_mm
+                                     + HEIGHT_OF_BEVEL
+                                     + TOLERANCE);
         // Cut out the middle of the cylinder
-        cylinder(start_z_mm + height_mm + HEIGHT_OF_BEVEL + TOLERANCE, radius_mm, radius_mm);
+        cylinder(TOP_OF_BEVEL_CYLINDERS_MM, radius_mm, radius_mm);
         // Cut the ridges into the ring   
         Radial_Array(30, 12, radius_mm + SCALLOPS_RECESS_RADIUS_MM * 0.55)
         rotate([0, 0, 90]) 
         scale([0.4, 1, 1])
-            cylinder(start_z_mm + height_mm + HEIGHT_OF_BEVEL + TOLERANCE, SCALLOPS_RECESS_RADIUS_MM, SCALLOPS_RECESS_RADIUS_MM);
+            cylinder(TOP_OF_BEVEL_CYLINDERS_MM,
+                     SCALLOPS_RECESS_RADIUS_MM,
+                     SCALLOPS_RECESS_RADIUS_MM);
     }
 }
 
@@ -270,3 +326,4 @@ module place_rabbit_ears(height_mm, outer_radius_mm) {
     rotate([90, 0, 90])
         rabbit_ears(slope=8);
 }
+// *****************************************************************
