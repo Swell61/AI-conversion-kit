@@ -328,6 +328,10 @@ module place_rabbit_ears(height_mm, outer_radius_mm) {
  * @param aperture_values list of aperture values on the aperture ring
  */
 module place_adr_scale(diameter_mm, aperture_values) {
-    adr(diameter_mm, aperture_values);
+    // Safety margin so it doesn't interfere with the aperture ring if
+    // printed at the same time.
+    OFFSET_MM = 10;
+    translate([(diameter_mm / 2) + OFFSET_MM, 0, 0])
+        adr(diameter_mm, aperture_values);
 }
 // *****************************************************************
