@@ -1,3 +1,4 @@
+use <rabbit-ears.scad>
 /**
     There are a few important components to the aperture ring. There is the
     "ring" which is the base of the aperture ring. There are two inner
@@ -14,7 +15,7 @@
     part, so only the inner diameter of the thick ring is needed. This is
     referred to as the "base".
 
-    To procude a model for an aperture ring for a lens, the following
+    To produce a model for an aperture ring for a lens, the following
     measurements are required:
         Inner diameter of thick ring
         Inner diameter of thin ring
@@ -22,23 +23,34 @@
         Aperture values of the lens
 */
 
+// *****************************************************************
 // Lens specific parameters
+// *****************************************************************
 // Inner diameter of the part of the ring that rubs against the lens
 INNER_DIAMETER_MM = 60;
 // Thickness between part of ring that rubs against the lens to the
 // main outside part of the ring.
 THICKNESS_MM = 1.2;
-NON_AI_RING_HEIGHT_MM=16.0; // Original non AI ring height
-
+// Original non AI ring height
+NON_AI_RING_HEIGHT_MM=16.0;
+// List of aperture values on the aperture ring
 APERTURE_VALUES = [16, 11, 8, 5.6, 4, 2.8, 2, 1.4];
 
-AIridgePosition=5; //see http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos
-
+// Properties of the thin twist limiting ring
 TWIST_LIMIT_RING_THICKNESS_MM = 2;
 TWIST_LIMIT_RING_HEIGHT_MM = 1.4;
 TWIST_LIMIT_RING_Z_MM = 10;
 
-AI_RIDGE_HEIGHT = 2.6; //the height that you would actually need to file if you did the conversion by modifying the original aperture ring
+// Whether or not to add the rabbit ear coupler to the ring
+PRINT_RABBIT_EARS = false;
+// *****************************************************************
+
+// *****************************************************************
+// The remainder of the values should be the same across lenses
+// (change if required)
+// *****************************************************************
+// Height of the Ai ridge
+AI_RIDGE_HEIGHT = 2.6;
 
 // These parameters that should be the same throughout the NIKKOR line
 APERTURE_CLICK_ANGLE_DEG = 7.15; // I think this is the angle the aperture ring moves for each stop click
@@ -47,28 +59,28 @@ APERTURE_CLICK_ANGLE_DEG = 7.15; // I think this is the angle the aperture ring 
 SCALLOPS_HEIGHT_MM = 3.20; //the height of the fluted part of the aperture ring (cosmetic)
 SCALLOPS_THICKNESS_MM = 2.2; //the thickness of the above part (cosmetic)
 SCALLOPS_Z_MM = 5; // This should be defined per lens
+// *****************************************************************
 
-//implementation details
+// *****************************************************************
+// Implmentation variables (don't change)
+// *****************************************************************
 // This increases the resolution, increasing the number of fragments
 $fa = 3; // Minimum fragment angle (default 12)
 $fs = 1; // Minimum size of a fragment (default 2)
 TOLERANCE = 0.1; //this is used so that the F5 openscad preview looks better
 
-print_rabbit_ears=true;
-
 //intermediate values
 OUTER_DIAMETER_MM = INNER_DIAMETER_MM + THICKNESS_MM;
 INNER_RADIUS_MM = INNER_DIAMETER_MM / 2;
 OUTER_RADIUS_MM = OUTER_DIAMETER_MM / 2;
-
-//rabbit ear
-//use <rabbit-ears.scad>
-//rotate(-15) translate([INNER_RADIUS_MM+THICKNESS_MM,0,NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT]) //rotate([90,0,90]) rabbit_ears(slope=8);
+// *****************************************************************
 
 base(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, INNER_RADIUS_MM, THICKNESS_MM, APERTURE_VALUES, TWIST_LIMIT_RING_Z_MM);
 ai_ridges(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, AI_RIDGE_HEIGHT, THICKNESS_MM, INNER_RADIUS_MM, STOPS_UNDER_F11, STOPS_OVER_F11);
 rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM, INNER_RADIUS_MM);
 scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, OUTER_RADIUS_MM, SCALLOPS_THICKNESS_MM);
+if (PRINT_RABBIT_EARS)
+    place_rabbit_ears(NON_AI_RING_HEIGHT_MM-AI_RIDGE_HEIGHT, INNER_RADIUS_MM+THICKNESS_MM);
 
 module screw_hole(){
     rotate([0,0,7])
@@ -193,6 +205,8 @@ module base(height_mm, inner_radius_mm, thickness_mm, aperture_values, click_rid
 module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, aperture_stops) {
     STOPS_OVER_F11 = len([for (aperture = APERTURE_VALUES) if (aperture < 11) aperture]);
     STOPS_UNDER_F11 = len([for (aperture = APERTURE_VALUES) if (aperture > 11) aperture]);
+    // See http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos for the following
+    AI_RIDGE_POSITION = min(aperture_values) <= 1.8 ? 5 : 4.66;
     intersection(){
         // Full rim around the entire circumference of the ring
         translate([0,0,start_z_mm])
@@ -202,7 +216,7 @@ module ai_ridges(start_z_mm, height_mm, thickness_mm, radius_mm, aperture_stops)
             rotate([0,0,STOPS_UNDER_F11*APERTURE_CLICK_ANGLE_DEG-124])
                 slice(8, start_z_mm+height_mm, radius_mm+3);
             // actual AI ridge
-            rotate([0,0,(-STOPS_OVER_F11+AIridgePosition)*APERTURE_CLICK_ANGLE_DEG])
+            rotate([0,0,(-STOPS_OVER_F11+AI_RIDGE_POSITION)*APERTURE_CLICK_ANGLE_DEG])
                 slice(54, start_z_mm+height_mm,radius_mm+3);
         }
     }
@@ -259,4 +273,21 @@ module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
         scale([0.4,1,1])
             cylinder(NON_AI_RING_HEIGHT_MM+TOLERANCE,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
     }
+}
+
+/**
+ * Puts rabbit ears on aperture ring
+ *
+ * @param height_mm height to place rabbit ears at
+ * @param outer_radius_mm of aperture ring
+ */
+module place_rabbit_ears(height_mm, outer_radius_mm) {
+    // Bunny ears appear at the f/5.6 mark. Zero is f/11 so need to
+    // offset by 2 stops
+    ROTATION_OFFSET = 2 * APERTURE_CLICK_ANGLE_DEG;
+    rotate(-ROTATION_OFFSET)
+    // Move the rabbit ears model to the top of the aperture ring
+    translate([outer_radius_mm, 0, height_mm])
+    rotate([90,0,90])
+        rabbit_ears(slope=8);
 }
