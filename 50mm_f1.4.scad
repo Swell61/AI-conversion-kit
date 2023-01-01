@@ -25,53 +25,57 @@
 */
 
 //lens specific parameters
-innerDiameter=60.6; // Not sure where this is from
-thickness=1.6; // Not sure where this is from either
-originalHeight=16.0; //original non AI ring height
-rimHeight=2.6; //the height that you would actually need to file if you did the conversion by modifying the original aperture ring
+// Inner diameter of the part of the ring that rubs against the lens
+inner_diameter=60.6;
+// Thickness between part of ring that rubs against the lens to the
+// main outside part of the ring.
+thickness=1.6;
+originalHeight=16.0; // Original non AI ring height
 apertureClicks=8; //how many aperture clicks does this lens have
 AIridgePosition=5; //see http://www.chr-breitkopf.de/photo/aiconv.en.html#ai_pos
-// Not sure why indexing is done in this code based on f/5.6 rather than f/11 (which is the zero point)
+
 STOPS_OVER_F11 = 6;
 STOPS_UNDER_F11 = 1;
 
-TWIST_LIMIT_RING_THICKNESS_MM=2;
-TWIST_LIMIT_RING_HEIGHT_MM=1.9;
-TWIST_LIMIT_RING_Z_MM=10;
+TWIST_LIMIT_RING_THICKNESS_MM = 2;
+TWIST_LIMIT_RING_HEIGHT_MM = 1.9;
+TWIST_LIMIT_RING_Z_MM = 10;
 
-//parameters that should be the same throughout the NIKKOR line
-APERTURE_CLICK_ANGLE_DEG=7.15; // I think this is the angle the aperture ring moves for each stop click
+AI_RIDGE_HEIGHT = 2.6; //the height that you would actually need to file if you did the conversion by modifying the original aperture ring
 
-//cosmetic parameters
-SCALLOPS_HEIGHT_MM=3.20; //the height of the fluted part of the aperture ring (cosmetic)
-SCALLOPS_THICKNESS_MM=2.2; //the thickness of the above part (cosmetic)
-SCALLOPS_Z_MM=5; // This should be defined per lens
+// These parameters that should be the same throughout the NIKKOR line
+APERTURE_CLICK_ANGLE_DEG = 7.15; // I think this is the angle the aperture ring moves for each stop click
+
+// Scallop parameters
+SCALLOPS_HEIGHT_MM = 3.20; //the height of the fluted part of the aperture ring (cosmetic)
+SCALLOPS_THICKNESS_MM = 2.2; //the thickness of the above part (cosmetic)
+SCALLOPS_Z_MM = 5; // This should be defined per lens
 
 //implementation details
 // This increases the resolution, increasing the number of fragments
 $fa = 3; // Minimum fragment angle (default 12)
 $fs = 1; // Minimum size of a fragment (default 2)
-tolerance = 0.1; //this is used so that the F5 openscad preview looks better
+TOLERANCE = 0.1; //this is used so that the F5 openscad preview looks better
 
 print_rabbit_ears=true;
 
 //intermediate values
-outerDiameter=innerDiameter+thickness;
-innerRadius=innerDiameter/2;
-outerRadius=outerDiameter/2;
+OUTER_DIAMETER_MM = inner_diameter + thickness;
+INNER_RADIUS_MM = inner_diameter / 2;
+OUTER_RADIUS_MM = OUTER_DIAMETER_MM / 2;
 
 //rabbit ear
 //use <rabbit-ears.scad>
-//rotate(-15) translate([innerRadius+thickness,0,originalHeight-rimHeight]) //rotate([90,0,90]) rabbit_ears(slope=8);
+//rotate(-15) translate([INNER_RADIUS_MM+thickness,0,originalHeight-AI_RIDGE_HEIGHT]) //rotate([90,0,90]) rabbit_ears(slope=8);
 
-base(originalHeight-rimHeight, innerRadius, thickness, apertureClicks);
-ai_ridges(originalHeight-rimHeight, rimHeight, thickness, innerRadius, STOPS_UNDER_F11, STOPS_OVER_F11);
+base(originalHeight-AI_RIDGE_HEIGHT, INNER_RADIUS_MM, thickness, apertureClicks);
+ai_ridges(originalHeight-AI_RIDGE_HEIGHT, AI_RIDGE_HEIGHT, thickness, INNER_RADIUS_MM, STOPS_UNDER_F11, STOPS_OVER_F11);
 rotation_limiting_ring(TWIST_LIMIT_RING_Z_MM, TWIST_LIMIT_RING_HEIGHT_MM, TWIST_LIMIT_RING_THICKNESS_MM);
-scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, outerRadius, SCALLOPS_THICKNESS_MM);
+scallops(SCALLOPS_Z_MM, SCALLOPS_HEIGHT_MM, OUTER_RADIUS_MM, SCALLOPS_THICKNESS_MM);
 
 module screw_hole(){
     rotate([0,0,7])
-    translate([-innerRadius-thickness-tolerance*2,0,2.6])
+    translate([-INNER_RADIUS_MM-thickness-TOLERANCE*2,0,2.6])
     rotate([90,0,90])
         cylinder(7, r=0.75, $fn=16);
 }
@@ -92,7 +96,7 @@ module Radial_Array(a,n,r)
  }
 }
 
-module slice(angle, height,radius=innerRadius){
+module slice(angle, height,radius=INNER_RADIUS_MM){
     intersection() {
         mirror([1,0,0])
         translate([-radius*1.2,0,0])
@@ -110,24 +114,23 @@ module slice(angle, height,radius=innerRadius){
  */
 module tube(height_mm, inner_radius_mm, thickness_mm){
     outerRadius = inner_radius_mm + thickness_mm;
-    tolerance = 0.1;
     difference(){
         cylinder(height_mm, outerRadius, outerRadius);
-        translate([0, 0, -tolerance/2]) 
-            cylinder(height_mm+tolerance, inner_radius_mm, inner_radius_mm);
+        translate([0, 0, -TOLERANCE/2]) 
+            cylinder(height_mm+TOLERANCE, inner_radius_mm, inner_radius_mm);
     }
 }
 
 // See usage comment
-// module coneRim(height,innerRadius,thickness){
-//     outerRadius = innerRadius+thickness;
-//     tolerance=2;
+// module coneRim(height,INNER_RADIUS_MM,thickness){
+//     outerRadius = INNER_RADIUS_MM+thickness;
+//     TOLERANCE=2;
 //     difference(){
 //         cylinder(height,outerRadius,outerRadius);
 //         union(){
-// 			cylinder(height,outerRadius,innerRadius);
-// 			translate([0,0,-tolerance/2])
-//                 cylinder(height+tolerance,innerRadius,innerRadius); //this just helps to create a nice preview
+// 			cylinder(height,outerRadius,INNER_RADIUS_MM);
+// 			translate([0,0,-TOLERANCE/2])
+//                 cylinder(height+TOLERANCE,INNER_RADIUS_MM,INNER_RADIUS_MM); //this just helps to create a nice preview
 // 		}
 //     }
 // }
@@ -218,12 +221,12 @@ module rotation_limiting_ring(start_z_mm, height_mm, thickness_mm) {
     difference(){
         union(){
             translate([0,0,start_z_mm])
-                tube(height_mm,innerRadius-thickness_mm,thickness_mm);
+                tube(height_mm,INNER_RADIUS_MM-thickness_mm,thickness_mm);
             //small ridge to help with printing (balcony)
             // can't tell what this is doing, the slicer seems to output
             // the same thing with or without this
             // translate([0,0,start_z_mm])
-            //     coneRim(0.5,innerRadius-thickness_mm,thickness_mm);
+            //     coneRim(0.5,INNER_RADIUS_MM-thickness_mm,thickness_mm);
         }
         mirror([0,1,0])
             slice(75,originalHeight);
@@ -255,6 +258,6 @@ module scallops(start_z_mm, height_mm, radius_mm, thickness_mm) {
         Radial_Array(30,12,radius_mm+SCALLOPS_RECESS_RADIUS_MM*0.55)
         rotate([0,0,90]) 
         scale([0.4,1,1])
-            cylinder(originalHeight+tolerance,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
+            cylinder(originalHeight+TOLERANCE,SCALLOPS_RECESS_RADIUS_MM,SCALLOPS_RECESS_RADIUS_MM);
     }
 }
